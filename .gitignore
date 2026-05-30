@@ -1,0 +1,9 @@
+# Third-party reference images (web-sourced, not ours to redistribute)
+413453b.avif
+wrist-gears.webp
+back.png
+back_big.png
+
+# OS / editor cruft
+.DS_Store
+*.swp
