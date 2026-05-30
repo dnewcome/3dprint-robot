@@ -205,6 +205,16 @@ backlash or buildability; **landed on an all-cable wrist.**
   stay cable). Print + measure backlash before trusting it. Decision:
   deferred — **capstan drive is being prototyped first.**
   Channel: youtube.com/@MishinMachine (similar printed cable/gear robotics).
+- **Mishin techniques worth borrowing:**
+  - *Belt pre-stage* — already used (2:1 GT2 into the reduction).
+  - *Right-angle cycloid* — reduction + 90° axis turn in one unit; tucks a
+    motor along a link to drive a perpendicular joint. Gear-path only
+    (relevant if a bend joint ever goes geared).
+  - *Through-bore / decoupled-center cycloid* — hollow joint center to
+    route the dress-pack + downstream tendons ON the rotation axis. Useful
+    regardless of drive type — carry into the joint housings.
+  - His cycloidal cartridge ≈ our `cycloidal_disc.scad` (steel dowels,
+    eccentric cam, output-pin disc) — validates the fallback joint design.
 
 ## File index (cont.)
 **Exploratory / fallback (gear-based path, kept for reference):**
