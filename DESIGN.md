@@ -37,6 +37,30 @@ per-subsystem detail lives in the referenced `*_spec.md` files.
 - **Every joint:** large crossed-roller output bearing + output-side
   absolute magnetic encoder.
 
+## Design philosophy — complexity arbitrage
+Spend the thing 3D printing makes free (arbitrary geometric complexity) to
+buy down what's actually expensive: precision-machined/specialty parts,
+money, and lead time. Prefer **clever printed shapes + commodity hardware**
+(NEMA17, 608 bearings, steel dowels, nylon spacers, Dyneema, magnets) over
+simple shapes that need bought precision. Higher *conceptual* complexity is
+an acceptable price for *part availability* and fast iteration.
+
+**The refinement that protects "iterate easily":** 3DP makes *fabrication*
+complexity free — it does NOT make *assembly/tuning/debug* complexity free.
+The real limit on iteration speed is part count, tolerances, and things you
+must calibrate (cable tension, backlash, coupling), not print cost. So the
+rule isn't "minimize complexity" — it's **push complexity into the printed
+geometry, keep it out of the assembly/tuning loop: complex to print, simple
+to build and tune.**
+
+Tactics to keep the iteration loop cheap:
+- **Modular swappable joints** — iterate by reprinting one part, not the arm.
+- **Reuse hardware, reprint plastic** — a revision costs filament + an hour,
+  never new bought parts.
+- **Parametric files** (`capstan.scad` etc.) — a change is a number, not a remodel.
+- **Engineer the tuning out** — constant-force tensioner (no re-tensioning),
+  output encoders (calibrate coupling instead of building it out).
+
 ## 3. Governing design principles
 1. **Cable, not printed gears, for low backlash.** Cables are always in
    tension → no lash; printed strain-wave/cycloidal/bevel all carry lash.
