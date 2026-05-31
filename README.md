@@ -73,6 +73,7 @@ openscad -o out.png --imgsize=900,900 capstan.scad
 ## References
 - Cable-transmission arms (Barrett WAM, UC Berkeley Blue) — remote-cable inspiration.
 - [Mishin Machine](https://youtube.com/@MishinMachine) — printed cable/wave-gear robotics; rolling-element wave gear is the optional roll-joint reducer candidate.
+- [Morse Dynamics](https://instagram.com/morsedynamics) — closely related printed robotics / actuator-drivetrain work.
 
 ---
 *Design developed iteratively; see DESIGN.md for the full reasoning and rejected alternatives.*

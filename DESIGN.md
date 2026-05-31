@@ -205,6 +205,9 @@ backlash or buildability; **landed on an all-cable wrist.**
   stay cable). Print + measure backlash before trusting it. Decision:
   deferred — **capstan drive is being prototyped first.**
   Channel: youtube.com/@MishinMachine (similar printed cable/gear robotics).
+- **Morse Dynamics** (instagram.com/morsedynamics) — closely related
+  printed robotics / actuator-drivetrain work; reference for joint, drive,
+  and reducer techniques.
 - **Mishin techniques worth borrowing:**
   - *Belt pre-stage* — already used (2:1 GT2 into the reduction).
   - *Right-angle cycloid* — reduction + 90° axis turn in one unit; tucks a
