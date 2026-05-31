@@ -48,7 +48,9 @@ is finalized for print yet.
 - `capstan_drive.scad` — 2-stage capstan reduction.
 - `capstan_teststand.scad` + `_spec.md` — **remote-capstan test rig** (next build).
 - `cable_wrist.scad` — differential wrist schematic.
-- `arm_assembly.scad` — whole-arm visualization (pose-able).
+- `arm_v1.scad` — **current top-level assembly** (v1: cycloid joints, bevel-diff wrist, 5-DOF, pose-able).
+- `base.scad` — J1 base: moment-bearing carrier + internal-ring drive.
+- `arm_assembly.scad` — earlier cable-architecture concept render (superseded by arm_v1).
 - `whole_arm.scad`, `turntable.scad` — layout.
 
 **Exploratory / fallback (gear-based, kept for reference)**

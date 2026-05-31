@@ -242,7 +242,9 @@ share the cartridge design where possible (modularity, per the philosophy).
 - `encoder_joint_spec.md` — integrated encoder.
 - `turntable.scad`, `turntable_spec.md` — base (also the remote-trunk
   upgrade path).
-- `arm_assembly.scad`/`.png`, `whole_arm.scad` — visualization.
+- `arm_v1.scad`/`.png` — **current top-level assembly** (v1 build config).
+- `base.scad`/`.png` — J1 base (moment-bearing carrier + internal-ring drive).
+- `arm_assembly.scad`/`.png`, `whole_arm.scad` — earlier cable-concept viz.
 
 ## 15. Candidate parts / references
 - **Roll-joint reducer (OPTIONAL, post-capstan):** Mishin Machine's
