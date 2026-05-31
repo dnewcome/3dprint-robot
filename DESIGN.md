@@ -258,6 +258,36 @@ share the cartridge design where possible (modularity, per the philosophy).
 - **Morse Dynamics** (instagram.com/morsedynamics) — closely related
   printed robotics / actuator-drivetrain work; reference for joint, drive,
   and reducer techniques.
+
+### Design idea (PARKED — not committed): pancake BLDC joint actuator
+Replace the coaxial stepper with a low-profile **pancake BLDC** (~90 mm OD,
+matching the cycloid ring) for a thin integrated actuator + backdrivable /
+force-controllable motion. Key findings:
+- **Don't look for an inrunner.** A 90 mm low-profile inrunner-with-shaft
+  doesn't exist and is the wrong topology: torque ∝ rotor radius, so big
+  pancakes put magnets at large radius = **outrunner or frameless**. An
+  inrunner here = low torque + high Kv (wrong for a joint).
+- **Two viable parts:**
+  - *Gimbal outrunner* (T-Motor GB / iPower GBM / generic ~90 mm, low Kv,
+    ~15–30 mm tall) — easiest, off-the-shelf. Mount the static core to the
+    joint body, **bolt the eccentric cam to the rotating bell** (no shaft).
+  - *Frameless BLDC kit* (rotor ring + stator ring) — build your own
+    inrunner-style with a protruding shaft; max integration, more assembly.
+- **Electronics:** needs FOC (ODrive / SimpleFOC / VESC) + commutation
+  encoder — this is "building servo drives." Synergy: the planned magnetic
+  encoder (AS5048/MT6701) **doubles as the FOC sensor**.
+- **Still keep the cycloid reduction** — BLDC upgrades the motor, not the
+  gearbox; and a low-ratio BLDC must draw current to hold a pose (heat) →
+  meaningful reduction needed. BLDC **+ cycloid**, not direct-drive.
+- **Don't load the motor's light bearings** with the eccentric — let the
+  cycloid's own input bearing carry it; motor supplies torque only.
+- **Sequencing:** design the joint cartridge **dual-use** (stepper+belt now
+  / frameless BLDC stator bore later); prototype mechanics with cheap
+  open-loop steppers first, swap to BLDC once compliance/smoothness is
+  wanted. The 90 mm cycloid ring already matches a 90 mm motor → drop-in.
+- **Status:** parked — adds electronics/tuning complexity (against
+  "simple to build/tune"); revisit after the stepper+cable mechanics prove
+  out. Capstan/stepper remains the committed path.
 - **Mishin techniques worth borrowing:**
   - *Belt pre-stage* — already used (2:1 GT2 into the reduction).
   - *Right-angle cycloid* — reduction + 90° axis turn in one unit; tucks a
