@@ -207,6 +207,32 @@ backlash or buildability; **landed on an all-cable wrist.**
    before adding the 3rd cord.
 4. Then replicate + integrate the full arm.
 
+## v1 build configuration (the cohesive 6-DOF integration)
+Per-joint calls for the first buildable arm:
+
+| Joint | Drive | Motor | Notes |
+|------|-------|-------|-------|
+| **J1 base** | fixed internal ring (72T) + onboard pinion (18T) = **4:1**, on a ~116 mm BB moment bearing | onboard the turntable | gravity-neutral axis → low ratio fine; bearing is the real job. `base.scad` |
+| **J2 shoulder** | coaxial stepper + cycloid; **drive body = the arm link** | coaxial at shoulder | clevis-free cantilever (`coaxial_joint.scad`, cycloidal internals) |
+| **J3 elbow** | **FORK** (decide): (a) Dyneema remote capstan, or (b) remote cycloid via a long input shaft from a shoulder-mounted stepper | shoulder or upper-arm | (b) reuses the cycloid + no cable to tune; (a) is the zero-backlash but fiddlier path still to be prototyped |
+| **J4/J5/J6 wrist** | **geared bevel differential** (no belts) | 2 steppers on forearm | differential = **2 DOF (pitch+roll)** only |
+
+**Open decisions (pin before full integration):**
+1. **DOF:** bevel differential is **2 axes** → 5 motors = **5-DOF v1**. The 3rd
+   wrist axis (J4 forearm roll) needs a 6th motor — leave a mount, add later.
+   (Matches "simple enough for now.")
+2. **Shoulder structure drives J3:** the "J3 motor opposite J2 at the
+   shoulder" idea needs a **two-sided yoke shoulder**, which conflicts with
+   the **one-sided coaxial cantilever J2**. Pick one: clean cantilever J2
+   *or* symmetric back-to-back motors. Recommendation: cantilever J2 +
+   remote-cycloid J3 (long shaft up the upper arm); keep the Dyneema rig as
+   a separate de-risking experiment.
+3. **J1 is gravity-neutral** (vertical axis) → simple 4:1 internal-ring
+   drive is sufficient; spend the effort on the moment bearing.
+
+Reduction reuse: J1 and J2 are both cycloid/internal-ring coaxial drives —
+share the cartridge design where possible (modularity, per the philosophy).
+
 ## 14. File index
 **Current / canonical (cable-driven path):**
 - `DESIGN.md` — this file.
