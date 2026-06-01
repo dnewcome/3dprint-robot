@@ -1,41 +1,56 @@
-# 3D-Printed Cable-Driven 6-DOF Robot Arm — Design
+# 3D-Printed Cycloidal Robot Arm — Design
 
-**Status:** architecture converged on a remote, cable-driven (Dyneema
-capstan) arm with distributed local motors and a pure-cable wrist.
-Prototyping not yet started. This file is the single source of truth;
-per-subsystem detail lives in the referenced `*_spec.md` files.
+**Status:** pared down to a buildable near-term target — a **3-DOF cycloid
+trunk** (J1 base + J2 shoulder + J3 elbow), all the *same* parametric joint
+cartridge at three sizes. The earlier cable-driven / wrist / BLDC work is
+kept as **parked exploration** under `parked/` (see §"Parked explorations").
+This file is the source of truth; per-subsystem detail in `*_spec.md`.
 
 ---
 
+## 0. BUILD TARGET (current scope)
+- **3-DOF cycloid trunk:** J1 (base yaw, vertical) + J2 (shoulder) + J3
+  (elbow). Three joints position the tool **point** in space; a fixed
+  gripper or manual wrist bolts to the forearm flange.
+- **One joint design, three instances.** `cycloid_joint.scad` is the single
+  parametric cartridge; J1/J2/J3 are presets (`cfg("J1"/"J2"/"J3")`).
+  Assembly: `arm_trunk.scad`.
+- **J1 base decision:** J1 is just the cartridge stood **vertical**; its
+  output bearing, **sized up**, *is* the moment bearing (carries the whole
+  arm's tipping load). No separate base mechanism.
+- **Drive (every joint):** NEMA17 → 2:1 GT2 belt → double-eccentric cam →
+  twin cycloid discs (180° = balanced) → 6 output pins → output flange on a
+  big BB crossed-roller bearing. **Net 36:1** (18:1 cyclo × 2:1 belt).
+- **Backlash strategy:** floating-roller cycloid (nylon rollers, clearance
+  sets backlash, SLA bearing surfaces) + output-side magnetic encoder.
+- **Future (parked):** wrist (pitch/yaw/roll) and/or BLDC integrated
+  actuators extend this to 5–6 DOF *after* the trunk proves out.
+
 ## 1. Goals & constraints
-- **6-DOF** articulated arm (full dexterity), with a clean **5-DOF**
-  fallback (drop forearm roll).
+- **Near-term: 3-DOF** positioning trunk (above). 5–6 DOF is the parked
+  upgrade path (wrist), not the current build.
 - **Payload:** 250 g at the tool.
 - **Print volume:** 250 mm cube. One-piece links ≤ ~180 mm; larger split
   and bolt.
-- **Reach:** ~490 mm from the shoulder.
-- **Low backlash** is the governing value — it drove every major choice
-  (cable over printed gears, Dyneema, output-side encoders).
+- **Reach:** ~480 mm from the shoulder (a1=a2≈210 mm + tool).
+- **Low backlash** is the governing value — drove the cycloid choice
+  (floating rollers, output-side encoders, bearing outboard of the gears).
 - **Commonly available actuators:** NEMA17 steppers, open-loop to start;
-  no servo drives required initially.
+  no servo drives required.
 - **Cost/printability** over precision-machined parts.
 
 ## 2. Architecture at a glance
 ```
- fixed base ─ J1 yaw ─ TURNTABLE ─ J2 shoulder ─ upper arm ─ J3 elbow
-   ─ forearm ─ [wrist: pitch + yaw + roll, pure-cable] ─ gripper
+ table ─ pedestal ─ J1 yaw (vertical, big moment bearing) ─ mast
+   ─ J2 shoulder ─ upper arm ─ J3 elbow ─ forearm ─ [tool flange]
 ```
-- **Drive:** Dyneema capstan (cable) reduction. Zero backlash, light arm,
-  motors kept off the distal links.
-- **Motors:** distributed — each joint's motor sits on the link just
-  distal to the upstream joint (see §6), so no tendon crosses a joint →
-  **no inter-joint coupling.**
-- **Bends (J2/J3 + wrist pitch/yaw):** capstan to an output sector/drum.
-- **Rolls (J1, optional J4):** continuous-rotation; capstan can't do
-  continuous travel, so these stay geared/direct or are provided by the
-  wrist's cabled roll.
-- **Every joint:** large crossed-roller output bearing + output-side
-  absolute magnetic encoder.
+- **Drive:** identical cycloidal cartridge at every joint (`cycloid_joint
+  .scad`), 36:1, clevis-free stator/rotor with the crossed-roller bearing
+  **outboard of the gears** so it carries the cantilever moment.
+- **Motors:** NEMA17, coaxial-ish via a 2:1 belt pre-stage (which also puts
+  the cam on its own supported shaft and lets the motor be repositioned).
+- **Every joint:** large BB crossed-roller output bearing + output-side
+  absolute magnetic encoder + open center bore for cables/encoder magnet.
 
 ## Design philosophy — complexity arbitrage
 Spend the thing 3D printing makes free (arbitrary geometric complexity) to
@@ -207,44 +222,33 @@ backlash or buildability; **landed on an all-cable wrist.**
    before adding the 3rd cord.
 4. Then replicate + integrate the full arm.
 
-## v1 build configuration (the cohesive 6-DOF integration)
-Per-joint calls for the first buildable arm:
-
-| Joint | Drive | Motor | Notes |
-|------|-------|-------|-------|
-| **J1 base** | fixed internal ring (72T) + onboard pinion (18T) = **4:1**, on a ~116 mm BB moment bearing | onboard the turntable | gravity-neutral axis → low ratio fine; bearing is the real job. `base.scad` |
-| **J2 shoulder** | coaxial stepper + cycloid; **drive body = the arm link** | coaxial at shoulder | clevis-free cantilever (`coaxial_joint.scad`, cycloidal internals) |
-| **J3 elbow** | **FORK** (decide): (a) Dyneema remote capstan, or (b) remote cycloid via a long input shaft from a shoulder-mounted stepper | shoulder or upper-arm | (b) reuses the cycloid + no cable to tune; (a) is the zero-backlash but fiddlier path still to be prototyped |
-| **J4/J5/J6 wrist** | **geared bevel differential** (no belts) | 2 steppers on forearm | differential = **2 DOF (pitch+roll)** only |
-
-**Open decisions (pin before full integration):**
-1. **DOF:** bevel differential is **2 axes** → 5 motors = **5-DOF v1**. The 3rd
-   wrist axis (J4 forearm roll) needs a 6th motor — leave a mount, add later.
-   (Matches "simple enough for now.")
-2. **Shoulder structure drives J3:** the "J3 motor opposite J2 at the
-   shoulder" idea needs a **two-sided yoke shoulder**, which conflicts with
-   the **one-sided coaxial cantilever J2**. Pick one: clean cantilever J2
-   *or* symmetric back-to-back motors. Recommendation: cantilever J2 +
-   remote-cycloid J3 (long shaft up the upper arm); keep the Dyneema rig as
-   a separate de-risking experiment.
-3. **J1 is gravity-neutral** (vertical axis) → simple 4:1 internal-ring
-   drive is sufficient; spend the effort on the moment bearing.
-
-Reduction reuse: J1 and J2 are both cycloid/internal-ring coaxial drives —
-share the cartridge design where possible (modularity, per the philosophy).
+## v1 build configuration — SUPERSEDED (see §0 BUILD TARGET)
+The earlier v1 config (internal-ring J1 + cycloid J2 + a J3 capstan/cycloid
+**fork** + bevel-differential wrist, 5-DOF) has been **pared down**. The
+resolved decisions now live in §0:
+- **DOF:** 6→**3-DOF trunk** for the near-term build; wrist parked.
+- **J3 fork → resolved:** elbow is **cycloid** (same cartridge), not capstan.
+  The Dyneema rig moves to `parked/` as a separate future experiment.
+- **J1 → resolved:** **cycloid** cartridge stood vertical (not the
+  internal-ring drive); its sized-up output bearing is the moment bearing.
+- **All three joints share ONE cartridge** (`cycloid_joint.scad`) — the
+  modularity the philosophy called for, now literal.
 
 ## 14. File index
-**Current / canonical (cable-driven path):**
-- `DESIGN.md` — this file.
-- `capstan_drive.scad`, `capstan_spec.md` — cable reduction.
-- `actuator_layout_spec.md` — distributed motor placement.
-- `cable_wrist_spec.md`, `wrist_decision.md` — wrist (pure-cable).
-- `encoder_joint_spec.md` — integrated encoder.
-- `turntable.scad`, `turntable_spec.md` — base (also the remote-trunk
-  upgrade path).
-- `arm_v1.scad`/`.png` — **current top-level assembly** (v1 build config).
-- `base.scad`/`.png` — J1 base (moment-bearing carrier + internal-ring drive).
-- `arm_assembly.scad`/`.png`, `whole_arm.scad` — earlier cable-concept viz.
+**Build path (top level):**
+- `DESIGN.md` — this file (source of truth).
+- `cycloid_joint.scad`/`.png` — **THE joint.** One parametric cycloidal
+  cartridge; J1/J2/J3 are presets. Consolidates the old cycloidal_disc +
+  joint_module + coaxial_joint + base files.
+- `arm_trunk.scad`/`.png` — **the build-target assembly** (3-DOF trunk).
+- `encoder_joint_spec.md` — integrated output-side encoder.
+
+**Parked explorations (`parked/`):** kept for reference, OUT of the build
+path — see §"Parked explorations" / `parked/README.md`. Includes the
+cable/capstan drive, pure-cable & bevel wrists, harmonic ring, BLDC motor
+options + integrated actuator, the superseded internal-ring base, the
+earlier multi-DOF assemblies (`arm_v1`, `arm_assembly`, `whole_arm`), and
+the now-merged `cycloidal_disc`/`joint_module`/`coaxial_joint` sources.
 
 ## 15. Candidate parts / references
 - **Roll-joint reducer (OPTIONAL, post-capstan):** Mishin Machine's
@@ -386,16 +390,19 @@ robot-joint actuators).
   moment bearing + dual encoders into one part; revisit after stepper+cable
   mechanics prove out.
 
-## File index (cont.)
-**Exploratory / fallback (gear-based path, kept for reference):**
-- `cycloidal_disc.scad`, `joint_module*.{scad,md}`, `belt_stage.scad`,
-  `arm_link*.{scad,md}` — cycloidal joint module.
-- `harmonic_ring.scad`, `harmonic_drive_spec.md` — flat strain-wave.
-- `coaxial_joint.scad`, `coaxial_joint_spec.md` — clevis-free cartridge.
-- `wrist_differential.scad` — bevel differential (rejected for backlash).
-- `bldc_2204.scad` — 2204-class outrunner BLDC fit/envelope model
-  (parametric; candidate small-frame actuator, see parked-BLDC sub-idea).
-- `bldc_options.md` — BLDC candidate comparison (KV markets, KV↔reduction
-  trade, holding-current-at-stall) for picking a joint motor.
-- `integrated_actuator.scad` — concept cross-section of a frameless BLDC
-  built into the cycloid (one drive unit; see integrated-actuator idea).
+## Parked explorations (`parked/`)
+Out of the current build path, kept as reference. The reasoning above (cable
+drive, wrist, BLDC, complexity-arbitrage) still applies if/when these come
+back. See `parked/README.md` for the full list. Grouped:
+- **Joint sources now merged into `cycloid_joint.scad`:** `cycloidal_disc`,
+  `joint_module*`, `coaxial_joint*`, `belt_stage`, `arm_link*`, `base*`.
+- **Cable / capstan drive:** `capstan*`, `actuator_layout_spec` — the
+  zero-backlash remote-tendon path; a future de-risking experiment.
+- **Wrist:** `cable_wrist*`, `wrist_differential`, `wrist_decision` — the
+  pitch/yaw/roll options for extending the trunk to 5–6 DOF.
+- **Harmonic:** `harmonic_ring`, `harmonic_drive_spec` — flat strain-wave
+  alternative reducer.
+- **BLDC:** `bldc_2204`, `bldc_options`, `integrated_actuator` — motor
+  options + the frameless-motor-in-reducer integrated-actuator concept.
+- **Earlier assemblies:** `arm_v1`, `arm_assembly`, `whole_arm`,
+  `turntable` — superseded by `arm_trunk.scad`.
