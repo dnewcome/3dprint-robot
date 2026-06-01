@@ -290,6 +290,38 @@ force-controllable motion. Key findings:
 - **Status:** parked — adds electronics/tuning complexity (against
   "simple to build/tune"); revisit after the stepper+cable mechanics prove
   out. Capstan/stepper remains the committed path.
+
+#### Sub-idea: small-frame BLDC + reduction as a NEMA-17 drop-in
+Evaluating several off-the-shelf BLDC options (e.g. a 2204-class drone
+outrunner, modeled in `bldc_2204.scad`, through to larger gimbal frames).
+A small BLDC **+ reduction can stand in for a NEMA 17 at a fraction of the
+mass** — the torque/speed numbers are easy; thermal-at-stall and control
+are the real constraints.
+- **Torque math (2204-1400KV example):** `Kt = 8.27/Kv ≈ 5.9 mN·m/A`.
+  - 10 A burst → 59 mN·m → only **~7:1** to match a 0.4 N·m NEMA-17 hold.
+  - 3 A sane-continuous → 18 mN·m → **~22:1** for 0.35 N·m output.
+  - Our existing 4–36:1 reductions already cover this; ≥20:1 gives
+    NEMA-17-class continuous torque and several × that on burst.
+- **Speed is surplus:** ~15,000 rpm free-run on 3S → ~430 rpm output even
+  at 36:1. You trade away speed to buy torque — exactly what's wanted.
+- **Mass win:** 2204 ≈ **28 g** vs NEMA 17 ≈ **280 g**. Even with a printed
+  cycloid stage, well under the stepper → big distal-link inertia drop
+  (serves the "mass off the arm" goal). Good **wrist / gripper** candidate.
+- **Catch 1 — holding against gravity is the BLDC weak spot:** ~zero detent
+  torque, so holding a pose = servoing current at **zero rpm** = worst-case
+  heat with no propwash. Fix with enough reduction (low holding current),
+  a detent brake, or a self-locking-ish stage.
+- **Catch 2 — commits to FOC:** ODrive / SimpleFOC + encoder. The planned
+  output-side magnetic encoder **doubles as the commutation sensor**.
+- **Catch 3 — 1400 KV is the wrong wind for a joint:** racing motors are
+  wound for speed (need high current → stall heat) and their "continuous"
+  rating assumes prop cooling we won't have. **Prefer a low-KV gimbal wind**
+  (~100–200 KV, e.g. GB2208 / 4008-class) in the same frame: 7–14× the
+  torque-per-amp, so holding current and heat drop hard. Same envelope /
+  CAD, just rewound. **Spec gimbal-wound for any joint that holds load.**
+- **Takeaway:** as a *frame*, a small BLDC is a viable drop-in for a distal
+  joint at ≥20:1 with a derated thermal budget; as a *racing wind* it runs
+  hot at stall. `bldc_2204.scad` is the fit/envelope model for trial fits.
 - **Mishin techniques worth borrowing:**
   - *Belt pre-stage* — already used (2:1 GT2 into the reduction).
   - *Right-angle cycloid* — reduction + 90° axis turn in one unit; tucks a
@@ -308,3 +340,5 @@ force-controllable motion. Key findings:
 - `harmonic_ring.scad`, `harmonic_drive_spec.md` — flat strain-wave.
 - `coaxial_joint.scad`, `coaxial_joint_spec.md` — clevis-free cartridge.
 - `wrist_differential.scad` — bevel differential (rejected for backlash).
+- `bldc_2204.scad` — 2204-class outrunner BLDC fit/envelope model
+  (parametric; candidate small-frame actuator, see parked-BLDC sub-idea).
