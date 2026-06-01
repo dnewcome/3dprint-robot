@@ -260,6 +260,10 @@ share the cartridge design where possible (modularity, per the philosophy).
 - **Morse Dynamics** (instagram.com/morsedynamics) — closely related
   printed robotics / actuator-drivetrain work; reference for joint, drive,
   and reducer techniques.
+- **Skyentific** (youtube.com/@Skyentific) — printed **BLDC + cycloidal
+  integrated robot-joint actuators** (frameless motor built into the
+  reducer, FOC, dual encoders); closest existing work to the integrated-
+  actuator idea below. Also covers inverted/decoupled cycloid topologies.
 
 ### Design idea (PARKED — not committed): pancake BLDC joint actuator
 Replace the coaxial stepper with a low-profile **pancake BLDC** (~90 mm OD,
@@ -333,6 +337,55 @@ are the real constraints.
   - His cycloidal cartridge ≈ our `cycloidal_disc.scad` (steel dowels,
     eccentric cam, output-pin disc) — validates the fallback joint design.
 
+### Design idea: integrated BLDC-cycloidal actuator (one drive unit)
+Build a **frameless BLDC into the cycloidal reducer** so motor + gearbox +
+encoders are a single sealed unit — the big payoff of going BLDC. Model:
+`integrated_actuator.scad` (concept cross-section). Prior art: commercial
+Harmonic Drive **FHA** / Nabtesco **RV** / **CubeMars AK** & T-Motor joints;
+DIY/printed: **Skyentific** (closest existing work — printed BLDC-cycloidal
+robot-joint actuators).
+
+- **Frameless motor = stator ring + rotor ring, no housing/bearings.** You
+  supply the structure, so the magnetics build directly into the cycloid's
+  members instead of bolting on a separate motor.
+- **Member mapping:**
+  - rotor magnet ring → **eccentric carrier** (input, motor speed)
+  - stator ring → **fixed** to the housing (alongside the pin ring)
+  - output disc/plate → rides the big **moment bearing** (slow output)
+  - This makes the earlier **bell-as-eccentric** idea concrete: the rotor
+    *is* the bell; its eccentric crank drives the disc.
+- **Reduction** unchanged — still set by lobe count (`cycloidal_disc.scad`
+  math). The motor fills volume the reducer already had → ~zero extra axial
+  space beyond the magnet zone.
+- **Four integration-specific challenges** (don't exist for a bolt-on motor):
+  1. **Air gap must stay concentric, isolated from the eccentric.** Magnet
+     ring spins truly concentric on a **main bearing**; only a separate
+     eccentric crank on the rotor drives the disc. If disc load deflects the
+     magnets into the stator → cogging / rub / dead motor. Main bearing
+     (thin-section ball or printed BB race) takes the cycloid side-load so
+     the magnets never see it.
+  2. **Heat path.** Windings buried in plastic (an insulator) + stall-hold
+     current = cooking risk. Bond stator to a **metal insert** tied to the
+     housing, run **low-KV** (~2 A hold), add a winding **thermistor**.
+     This is the constraint that most often bites printed integrated actuators.
+  3. **Two encoders.** Rotor-back magnet (AS5048, FOC/commutation) + output
+     magnet (MT6701, absolute joint angle). Both sensors on the **static**
+     housing → no wires cross a rotating interface, no motor slip ring.
+  4. **Balance.** Eccentric orbiting mass shakes — use **twin discs 180°
+     out of phase** (also wanted for smoothness).
+- **Two forks:**
+  - *Outrunner vs inrunner frameless* — outrunner (magnets at large radius)
+    = more torque but magnet-zone and pin-ring-zone stack **axially** (a bit
+    taller); inrunner is flatter but lower torque density. → **outrunner**.
+  - *Cycloidal vs harmonic* — frameless integrates even more naturally into
+    **harmonic** (wave generator = rotor, gap concentric by construction =
+    the FHA architecture), but needs a durable **printed flexspline**.
+    Cycloidal is the print-robust choice; harmonic the elegant one.
+- **Status:** concept — same parked rationale (electronics/tuning vs "simple
+  to build/tune"). The unit unifies low-KV motor + bell-as-eccentric + output
+  moment bearing + dual encoders into one part; revisit after stepper+cable
+  mechanics prove out.
+
 ## File index (cont.)
 **Exploratory / fallback (gear-based path, kept for reference):**
 - `cycloidal_disc.scad`, `joint_module*.{scad,md}`, `belt_stage.scad`,
@@ -342,3 +395,7 @@ are the real constraints.
 - `wrist_differential.scad` — bevel differential (rejected for backlash).
 - `bldc_2204.scad` — 2204-class outrunner BLDC fit/envelope model
   (parametric; candidate small-frame actuator, see parked-BLDC sub-idea).
+- `bldc_options.md` — BLDC candidate comparison (KV markets, KV↔reduction
+  trade, holding-current-at-stall) for picking a joint motor.
+- `integrated_actuator.scad` — concept cross-section of a frameless BLDC
+  built into the cycloid (one drive unit; see integrated-actuator idea).
