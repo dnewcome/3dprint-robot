@@ -23,7 +23,8 @@
 
   <!-- MuJoCo import hints: keep visual geoms, auto-fix any rough inertia. -->
   <mujoco>
-    <compiler balanceinertia="true" discardvisual="false" fusestatic="false"/>
+    <compiler balanceinertia="true" discardvisual="false" fusestatic="false"
+              meshdir="meshes"/>
   </mujoco>
 
   <material name="frame">  <color rgba="0.30 0.30 0.32 1"/></material>
@@ -56,10 +57,10 @@
   </joint>
 
   <link name="mast_link">
-    <!-- J1 cartridge (big moment bearing), disk axis = Z -->
+    <!-- J1 drive: real Cycloidal R20 mesh, axis = Z, centered on the joint -->
     <visual>
-      <origin xyz="0 0 0"/>
-      <geometry><cylinder radius="0.066" length="0.0445"/></geometry>
+      <origin xyz="0 0 -0.0287"/>
+      <geometry><mesh filename="cycloid_r20.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="ring"/>
     </visual>
     <!-- shoulder mast up to J2 -->
@@ -86,10 +87,10 @@
   </joint>
 
   <link name="upper_arm_link">
-    <!-- J2 cartridge, disk axis = Y (rotated 90 deg about X) -->
+    <!-- J2 drive: real R20 mesh, axis rotated to Y, centered on the joint -->
     <visual>
-      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-      <geometry><cylinder radius="0.056" length="0.040"/></geometry>
+      <origin xyz="0 -0.0287 0" rpy="-1.5708 0 0"/>
+      <geometry><mesh filename="cycloid_r20.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="ring"/>
     </visual>
     <!-- upper arm -->
@@ -116,10 +117,10 @@
   </joint>
 
   <link name="forearm_link">
-    <!-- J3 cartridge, disk axis = Y -->
+    <!-- J3 drive: real R20 mesh, axis rotated to Y, centered on the joint -->
     <visual>
-      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-      <geometry><cylinder radius="0.048" length="0.0375"/></geometry>
+      <origin xyz="0 -0.0287 0" rpy="-1.5708 0 0"/>
+      <geometry><mesh filename="cycloid_r20.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="ring"/>
     </visual>
     <!-- forearm -->
