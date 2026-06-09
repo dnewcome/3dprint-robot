@@ -1,41 +1,89 @@
 #!/usr/bin/env python3
 """
-view.py — load the cycloid trunk in the MuJoCo interactive viewer for
-reach / workspace / posing exploration.
+view.py — interactive KEYBOARD poser for the 3-DOF cycloid trunk.
 
     pip install mujoco
     python sim/view.py
 
-In the viewer: drag the joint sliders (or the body) to pose the arm, watch
-the tool tip sweep its workspace, and eyeball self-collision. Gravity is on,
-so with the placeholder inertials it will also sag toward a rest pose — that's
-expected at this stage (real torque/sag work comes with proper inertias).
+Why keyboard, not sliders: MuJoCo's bundled GLFW here is a Wayland-only build,
+and its in-window UI slider widgets don't accept mouse drags under native
+Wayland (camera orbit works, sliders don't). Keyboard events DO go through, so
+we pose the joints with keys instead — reliable on this setup.
 
-MuJoCo reads the URDF directly. The <mujoco><compiler> block inside
-arm_trunk.urdf keeps the visual geoms and auto-balances inertia on import.
+CONTROLS (focus the viewer window):
+    J1 base yaw :  Q / A   (+ / -)
+    J2 shoulder :  W / S
+    J3 elbow    :  E / D
+    reset pose  :  R
+    mouse       :  orbit / pan / zoom the camera (works fine)
+
+Joints are posed kinematically (qpos set directly), so motion is exact and
+nothing sags — ideal for reach / workspace / posing. The live tip position and
+radial reach print to the console as you move.
 """
-import os
+import os, math
 import mujoco
 import mujoco.viewer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 URDF = os.path.join(HERE, "arm_trunk.urdf")
 
+KP, KV = 40.0, 2.0          # servo gains (used if you step physics instead)
+STEP = math.radians(3.0)    # keypress increment
+
+
+def build_model():
+    """Load the URDF and graft a position servo onto each joint."""
+    spec = mujoco.MjSpec.from_file(URDF)
+    for j in spec.joints:
+        a = spec.add_actuator()
+        a.name, a.target = j.name, j.name
+        a.trntype = mujoco.mjtTrn.mjTRN_JOINT
+        a.gaintype = mujoco.mjtGain.mjGAIN_FIXED
+        a.gainprm[0] = KP
+        a.biastype = mujoco.mjtBias.mjBIAS_AFFINE
+        a.biasprm[1], a.biasprm[2] = -KP, -KV
+        a.ctrllimited = mujoco.mjtLimited.mjLIMITED_TRUE
+        a.ctrlrange[0], a.ctrlrange[1] = j.range[0], j.range[1]
+    return spec.compile()
+
 
 def main():
-    model = mujoco.MjModel.from_xml_path(URDF)
+    model = build_model()
     data = mujoco.MjData(model)
+    tcp = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "tcp_link")
+    lo = model.jnt_range[:, 0].copy()
+    hi = model.jnt_range[:, 1].copy()
 
-    # report the kinematic chain + reach at zero pose
-    print(f"loaded {URDF}")
-    print(f"  joints: {model.njnt}   bodies: {model.nbody}")
-    mujoco.mj_forward(model, data)
-    tcp_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "tcp_link")
-    tip = data.xpos[tcp_id]
-    print(f"  TCP world pos @ zero pose: "
-          f"({tip[0]:.3f}, {tip[1]:.3f}, {tip[2]:.3f}) m")
+    # The joint TARGET lives in data.ctrl (length nu=3). The Control-tab sliders
+    # write it; the keys below also write it. The loop never overwrites it, so
+    # sliders no longer snap back. data.qpos just mirrors the target (kinematic
+    # posing — no gravity sag, exact).
+    BIND = {ord('Q'): (0, +1), ord('A'): (0, -1),   # GLFW: uppercase ASCII
+            ord('W'): (1, +1), ord('S'): (1, -1),
+            ord('E'): (2, +1), ord('D'): (2, -1)}
 
-    mujoco.viewer.launch(model, data)
+    def on_key(keycode):
+        if keycode == ord('R'):
+            data.ctrl[:3] = 0.0
+        elif keycode in BIND:
+            i, s = BIND[keycode]
+            data.ctrl[i] = max(lo[i], min(hi[i], data.ctrl[i] + s * STEP))
+
+    print(f"loaded {URDF}  (joints {model.njnt}, actuators {model.nu})")
+    print("  sliders (Control tab) OR keys: Q/A=J1  W/S=J2  E/D=J3  R=reset")
+
+    with mujoco.viewer.launch_passive(model, data, key_callback=on_key) as viewer:
+        while viewer.is_running():
+            data.qpos[:3] = data.ctrl[:3]     # mirror target -> pose (no clobber)
+            mujoco.mj_forward(model, data)
+            viewer.sync()
+            tip = data.xpos[tcp]
+            reach = math.hypot(tip[0], tip[1])
+            print(f"\r  J=({math.degrees(data.ctrl[0]):6.1f},"
+                  f"{math.degrees(data.ctrl[1]):6.1f},{math.degrees(data.ctrl[2]):6.1f})deg"
+                  f"  tip=({tip[0]:.3f},{tip[1]:.3f},{tip[2]:.3f})m  radial={reach:.3f}m   ",
+                  end="", flush=True)
 
 
 if __name__ == "__main__":
