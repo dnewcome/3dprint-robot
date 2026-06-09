@@ -7,3 +7,6 @@ back_big.png
 # OS / editor cruft
 .DS_Store
 *.swp
+__pycache__/
+*.pyc
+MUJOCO_LOG.TXT
