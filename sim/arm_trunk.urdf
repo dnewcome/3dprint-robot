@@ -175,4 +175,35 @@
       <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
+  <!-- ===== transmissions: where the per-joint reduction is recorded =====
+       ROS-style <transmission> (ros2_control reads these; MuJoCo ignores them
+       and gets its actuators from the sim scripts instead). mechanicalReduction
+       = the drive ratio: R20 cycloidal = 20:1, 20:1 Micro at the wrist. Bump the
+       load joints to 36 if you add the belt pre-stage (see sizing.py). -->
+  <transmission name="tr_j1">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j1_yaw"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <actuator name="j1_motor"><mechanicalReduction>20</mechanicalReduction></actuator>
+  </transmission>
+  <transmission name="tr_j2">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j2_shoulder"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <actuator name="j2_motor"><mechanicalReduction>20</mechanicalReduction></actuator>
+  </transmission>
+  <transmission name="tr_j3">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j3_elbow"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <actuator name="j3_motor"><mechanicalReduction>20</mechanicalReduction></actuator>
+  </transmission>
+  <transmission name="tr_j4">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j4_wrist_pitch"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <actuator name="j4_motor"><mechanicalReduction>20</mechanicalReduction></actuator>
+  </transmission>
+  <transmission name="tr_j5">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="j5_tool_roll"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <actuator name="j5_motor"><mechanicalReduction>20</mechanicalReduction></actuator>
+  </transmission>
+
 </robot>

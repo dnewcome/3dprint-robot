@@ -38,6 +38,11 @@ LINKS = {
 # per-joint actuator output torque (N*m): [J1,J2,J3,J4,J5]
 TAU_PEAK = [6.16, 6.16, 6.16, 6.16, 6.16]   # holding/stall (NEMA17 x20 x0.7eff)
 TAU_CONT = [3.70, 3.70, 3.70, 3.70, 3.70]   # continuous (thermal) limit
+# frictionloss = Coulomb friction reflected to the joint output. Models the
+# NON-BACKDRIVABILITY of a high-reduction cyclo+stepper (~motor detent x ratio +
+# gear friction): resists back-driving from reaction torques. Set 0 to feel the
+# difference (the arm then back-drives like a free pivot).
+FRICTION = [1.0, 1.0, 1.0, 0.5, 0.5]        # N*m per joint
 W0, ZETA = 30.0, 1.2                         # servo bandwidth rad/s, damping
 STEP = math.radians(3.0)
 
@@ -62,6 +67,8 @@ def build():
         a.ctrlrange[0] = j.range[0]; a.ctrlrange[1] = j.range[1]
     m = spec.compile()
     m.opt.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
+    for i in range(min(m.nv, len(FRICTION))):           # non-backdrivability
+        m.dof_frictionloss[i] = FRICTION[i]
     # per-joint servo gains scaled to each joint's inertia (uniform bandwidth =
     # stable even for the near-zero-inertia wrist-roll joint).
     d = mujoco.MjData(m); d.qpos[:m.nu] = [0, 0.6, -1.0, 0, 0]
