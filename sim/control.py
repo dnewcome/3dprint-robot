@@ -32,7 +32,6 @@ class IKController:
         self.damping = damping        # DLS lambda (stability near singularities)
         self.gain = gain              # fraction of error to chase per step
         self.max_step = max_step      # max joint move per step (rad)
-        self.lead_limit = lead_limit  # anti-windup: max command lead over actual (rad)
 
     def fk(self, q):
         self.d.qpos[:self.n] = q
@@ -88,3 +87,32 @@ def reach(robot, controller, target, tol=0.002, max_ticks=800, dt=0.02,
         if good >= settle:
             return True, err
     return False, float(np.linalg.norm(target - robot.get_tcp_pose()))
+
+
+def trace_path(robot, controller, segments, dt=0.02, record=True):
+    """Follow a CONTINUOUS Cartesian path (for drawing / dispensing / G-code).
+    `segments` = list of (xyz_target, speed_m_s). The setpoint advances along the
+    polyline at each segment's speed WITHOUT stopping at the waypoints, so the
+    tip traces a smooth path. Returns the recorded tip trajectory (N,3) if
+    `record`, for accuracy checking against the commanded path."""
+    controller.reset(robot.get_joint_positions())
+    sp = robot.get_tcp_pose().copy()
+    traj = []
+    def tick(setpoint):
+        q_cmd, _ = controller.step_toward(robot.get_joint_positions(),
+                                          robot.get_tcp_pose(), setpoint)
+        robot.set_joint_targets(q_cmd)
+        robot.step(dt)
+        if record:
+            traj.append(robot.get_tcp_pose().copy())
+    for tgt, speed in segments:
+        tgt = np.asarray(tgt, float)
+        while np.linalg.norm(tgt - sp) > speed*dt:
+            d = tgt - sp
+            sp = sp + d/np.linalg.norm(d)*speed*dt
+            tick(sp)
+        sp = tgt.copy()
+        tick(sp)
+    for _ in range(15):                    # settle on the final point
+        tick(sp)
+    return np.array(traj) if record else None
