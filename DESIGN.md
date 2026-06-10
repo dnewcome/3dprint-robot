@@ -26,6 +26,51 @@ This file is the source of truth; per-subsystem detail in `*_spec.md`.
 - **Future (parked):** wrist (pitch/yaw/roll) and/or BLDC integrated
   actuators extend this to 5–6 DOF *after* the trunk proves out.
 
+## 0.5 Actuator findings from simulation (current — supersedes §10)
+A full MuJoCo sim + analysis suite now lives in [`sim/`](sim/README.md). It
+quantified the actuator trade-offs below; **re-run `sim/sizing.py` whenever you
+change a motor/reduction** (edit the `MOTORS` catalog + masses, read off reach).
+These supersede the cable-era numbers in §10.
+
+**Torque budget (the binding facts):**
+- The **shoulder (J2) is the binding joint** — it holds everything beyond it at
+  full horizontal extension. Worst case for the current 5-DOF arm ≈ **5.25 N·m**.
+- A NEMA17 (~0.44 N·m hold) × 20:1 × ~0.7 eff = **~6.2 N·m peak / ~3.7 N·m
+  continuous** (steppers only sustain ~60% of holding before overheating). So at
+  **20:1 the current geometry holds full extension only at near-stall** (cooking
+  the motor). The 36:1 belt pre-stage in §0 is what gives real margin.
+- **Reduction is the dominant lever for reach** — 20→36:1 roughly *doubles* the
+  member length you can hold continuously; it beats motor upgrades.
+- **Wrist-motor mass hurts twice** — a heavy motor at the tip both is dead weight
+  *and* loads the shoulder. Keep wrist actuators as light as possible; the tip
+  lever dwarfs the 250 g payload.
+
+**Motor selection (what the catalog showed):**
+- **Don't buy a geared motor.** The metal planetary gearbox is the ~250–300 g
+  (geared NEMA14 = 411 g, geared NEMA11 = 349 g) — the gearbox dominates, not
+  the frame. **Build the reduction in the printed cycloidal** (light, ~0
+  backlash) and keep the motor **bare**.
+- **"Pancake" only helps as a BLDC outrunner.** Stepper torque ∝ stack *length*,
+  so a pancake stepper is just weaker (same torque/gram). BLDC outrunner torque ∝
+  *radius²*, so a flat-and-wide pancake outrunner is genuinely torque-dense. Best
+  case found: **pancake BLDC 8108 @36:1 → ~0.62 m reach** vs NEMA17's ~0.48 m.
+  Cost: FOC driver + encoder per joint, and worse static-hold (current→heat at
+  stall) — cuts against the "complexity out of tuning" value.
+- Recommended pattern: **torque-dense motor at shoulder/elbow + lightest motor at
+  the wrist**, all on the printed cycloidal. Never the same heavy motor everywhere.
+
+**Backlash budget (`sim/backlash.py`):** tip slop = Σ(joint backlash × lever-arm
+to tip). **The base joints (J1/J2) dominate** (~470 mm lever → ~1.6 mm each at
+0.2°); the tool-roll joint contributes ~0. Spend tight tolerances on the base.
+Cycloidal (0.1–0.2°) → **2–5 mm** tip slop; a planetary geared stepper (1°) →
+**~24 mm** — the hard number for "why cycloidal, not a gearbox."
+
+**Sim caveats:** efficiency 0.70, motor torques, masses, and frictions are
+editable estimates — they get *real* when you weigh printed parts, read motor
+datasheets, and measure fidelity against the built arm (the `sim/twin_demo.py`
+fidelity path). The sim is confidence-validated for sizing; treat the absolute
+numbers as guidance until tuned against hardware.
+
 ## 1. Goals & constraints
 - **Near-term: 3-DOF** positioning trunk (above). 5–6 DOF is the parked
   upgrade path (wrist), not the current build.
@@ -181,7 +226,9 @@ backlash or buildability; **landed on an all-cable wrist.**
 - Visualize/pose: `arm_assembly.scad` (→ `arm_assembly.png`),
   `whole_arm.scad`.
 
-## 10. Torque / sizing budget
+## 10. Torque / sizing budget — SUPERSEDED by §0.5 (cable-era numbers)
+*(These were for the parked Dyneema-capstan drive. For the cycloidal build, use
+§0.5 and `sim/sizing.py`.)*
 - **NEMA17 throughout** (run ≤ ~50% holding open-loop). No NEMA23 needed.
 - Bend joints at 36:1: ~24 N·m available vs ~11 N·m worst-case demand.
 - **Capstan torque ceiling** = working tension × sector radius ≈ **16 N·m**
@@ -205,10 +252,15 @@ backlash or buildability; **landed on an all-cable wrist.**
   the AS5600 single-address constraint.
 
 ## 12. Open decisions
-1. **6-DOF vs 5-DOF:** 6-DOF = 3 wrist cord pairs (pitch+yaw+roll);
-   5-DOF = 2 pairs, add the 3rd later. Same pure-cable mechanism.
-2. **Single vs per-cluster MCU / bus topology.**
-3. **Output bearing:** printed BB race vs bought thin-section (decide on
+1. **Actuator selection (active iteration).** Per §0.5: reduction in the printed
+   cycloidal (not a metal gearbox), motor kept bare. Open: stepper vs BLDC at the
+   load joints (NEMA17+cyclo is simple; pancake-BLDC+cyclo is lighter/longer-reach
+   but needs FOC+encoder ×N); the lightest wrist motor (NEMA8/11 vs small BLDC);
+   and the load-joint reduction (36:1 belt pre-stage vs a larger single-stage
+   cyclo). Re-run `sim/sizing.py` as candidates change.
+2. **6-DOF vs 5-DOF / wrist mechanism** (parked until the trunk proves out).
+3. **Single vs per-cluster MCU / bus topology.**
+4. **Output bearing:** printed BB race vs bought thin-section (decide on
    Proto 1 results).
 
 ## 13. Prototype / de-risk plan
