@@ -61,29 +61,32 @@ def main():
     # posing — no gravity sag, exact).
     BIND = {ord('Q'): (0, +1), ord('A'): (0, -1),   # GLFW: uppercase ASCII
             ord('W'): (1, +1), ord('S'): (1, -1),
-            ord('E'): (2, +1), ord('D'): (2, -1)}
+            ord('E'): (2, +1), ord('D'): (2, -1),
+            ord('R'): (3, +1), ord('F'): (3, -1),   # J4 wrist pitch
+            ord('T'): (4, +1), ord('G'): (4, -1)}   # J5 tool roll
 
     def on_key(keycode):
-        if keycode == ord('R'):
-            data.ctrl[:3] = 0.0
+        if keycode == ord('X'):
+            data.ctrl[:model.nu] = 0.0
         elif keycode in BIND:
             i, s = BIND[keycode]
-            data.ctrl[i] = max(lo[i], min(hi[i], data.ctrl[i] + s * STEP))
+            if i < model.nu:
+                data.ctrl[i] = max(lo[i], min(hi[i], data.ctrl[i] + s * STEP))
 
     print(f"loaded {URDF}  (joints {model.njnt}, actuators {model.nu})")
-    print("  sliders (Control tab) OR keys: Q/A=J1  W/S=J2  E/D=J3  R=reset")
+    print("  sliders OR keys: Q/A=J1 W/S=J2 E/D=J3 R/F=J4(wrist) T/G=J5(roll) X=reset")
 
     with mujoco.viewer.launch_passive(model, data, key_callback=on_key) as viewer:
+        n = model.nu
         while viewer.is_running():
-            data.qpos[:3] = data.ctrl[:3]     # mirror target -> pose (no clobber)
+            data.qpos[:n] = data.ctrl[:n]     # mirror target -> pose (no clobber)
             mujoco.mj_forward(model, data)
             viewer.sync()
             tip = data.xpos[tcp]
             reach = math.hypot(tip[0], tip[1])
-            print(f"\r  J=({math.degrees(data.ctrl[0]):6.1f},"
-                  f"{math.degrees(data.ctrl[1]):6.1f},{math.degrees(data.ctrl[2]):6.1f})deg"
-                  f"  tip=({tip[0]:.3f},{tip[1]:.3f},{tip[2]:.3f})m  radial={reach:.3f}m   ",
-                  end="", flush=True)
+            angs = ",".join(f"{math.degrees(data.ctrl[i]):.0f}" for i in range(n))
+            print(f"\r  J=[{angs}]deg  tip=({tip[0]:.3f},{tip[1]:.3f},{tip[2]:.3f})m"
+                  f"  radial={reach:.3f}m   ", end="", flush=True)
 
 
 if __name__ == "__main__":
