@@ -1,165 +1,136 @@
 <?xml version="1.0"?>
 <!-- ============================================================
-     arm_trunk.urdf — the 3-DOF cycloid trunk as a kinematic model.
+     arm_trunk.urdf — 3-DOF cycloid trunk, real Cycloidal R20 drive + NEMA17
+     steppers at each joint. Arm segments are FLAT PLATE members.
 
-     Purpose: REACH / WORKSPACE / POSING in MuJoCo (and portable to any
-     URDF consumer: BowlerStudio, ROS, a Telekinesis-style control layer).
+     R20 drive: round body (~63.5 dia) = OUTPUT (rotates), bolts to DISTAL
+     segment; square NEMA motor plate = FIXED, bolts to PROXIMAL segment.
+     Drive centered on the joint -> segments mount to opposite ends and are
+     offset ~36mm so they clear. J2/J3 alternate side (+Y/-Y) so the arm
+     zig-zags. Round mounting plates (orange) match the round output face.
 
-     Geometry is PRIMITIVE (cylinders) at this stage — exact for kinematics,
-     no meshes needed. Numbers mirror arm_trunk.scad (mm there, METERS here):
-        H_ped=40  pedestal                 -> 0.040
-        H_mast=70 (+8 deck) J1 deck->J2    -> joint2 at 0.078
-        a1=210    upper arm  J2->J3         -> joint3 at 0.210
-        a2=210    forearm    J3->flange     -> 0.210
-        tool=60   flange->tool point        -> tool stub
-     Joint disk ODs from cycloid_joint.scad cfg(): J1~0.132, J2~0.112, J3~0.096.
-     Axes: J1 = yaw about Z; J2, J3 = pitch about Y. Matches arm_trunk.scad.
-
-     Inertials are nominal placeholders (mass + small diagonal). They satisfy
-     the physics compiler for posing; replace with geometry-derived values
-     when you move to dynamics / torque sizing.
+     STEPPERS (dark, NEMA17 42.3 sq x 40mm) sit on the FIXED side behind each
+     motor plate -> they stick out the motor side so clearances are visible.
+     J1's motor points DOWN, housed in the base pedestal. Reach ~0.486 m.
      ============================================================ -->
-<robot name="cycloid_trunk">
+<robot name="cycloid_trunk_r20">
 
-  <!-- MuJoCo import hints: keep visual geoms, auto-fix any rough inertia. -->
   <mujoco>
     <compiler balanceinertia="true" discardvisual="false" fusestatic="false"
               meshdir="meshes"/>
   </mujoco>
 
-  <material name="frame">  <color rgba="0.30 0.30 0.32 1"/></material>
-  <material name="ring">   <color rgba="0.18 0.55 0.42 1"/></material>
-  <material name="link">   <color rgba="0.80 0.80 0.82 1"/></material>
+  <material name="motor">  <color rgba="0.13 0.13 0.15 1"/></material>
+  <material name="stepper"><color rgba="0.07 0.07 0.08 1"/></material>
+  <material name="body">   <color rgba="0.48 0.51 0.55 1"/></material>
+  <material name="plate">  <color rgba="0.85 0.45 0.10 1"/></material>
+  <material name="link">   <color rgba="0.78 0.78 0.80 1"/></material>
   <material name="tool">   <color rgba="0.27 0.51 0.71 1"/></material>
 
-  <!-- ===== base: pedestal, fixed to world ===== -->
+  <!-- ===== base: pedestal housing J1 stepper + J1 motor plate (fixed) ===== -->
   <link name="base_link">
-    <visual>
-      <origin xyz="0 0 0.020"/>
-      <geometry><cylinder radius="0.070" length="0.040"/></geometry>
-      <material name="frame"/>
-    </visual>
-    <inertial>
-      <origin xyz="0 0 0.020"/>
-      <mass value="0.60"/>
-      <inertia ixx="1e-3" iyy="1e-3" izz="1e-3" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
+    <visual><origin xyz="0 0 0.0275"/>           <!-- base pedestal (houses J1 motor) -->
+      <geometry><cylinder radius="0.045" length="0.055"/></geometry>
+      <material name="motor"/></visual>
+    <visual><origin xyz="0 0 0.055"/>            <!-- J1 motor plate + REAL stepper (in mesh), axis Z -->
+      <geometry><mesh filename="r20_motor.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name="motor"/></visual>
+    <inertial><origin xyz="0 0 0.03"/><mass value="1.0"/>
+      <inertia ixx="3e-3" iyy="3e-3" izz="3e-3" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
-  <!-- ===== J1: base yaw (about Z) ===== -->
+  <!-- ===== J1 base yaw (Z) ===== -->
   <joint name="j1_yaw" type="revolute">
-    <parent link="base_link"/>
-    <child  link="mast_link"/>
-    <origin xyz="0 0 0.040"/>
-    <axis xyz="0 0 1"/>
+    <parent link="base_link"/><child link="mast_link"/>
+    <origin xyz="0 0 0.073"/><axis xyz="0 0 1"/>
     <limit lower="-3.1416" upper="3.1416" effort="20" velocity="3.0"/>
     <dynamics damping="0.05"/>
   </joint>
 
   <link name="mast_link">
-    <!-- J1 drive: real Cycloidal R20 mesh, axis = Z, centered on the joint -->
-    <visual>
-      <origin xyz="0 0 -0.0287"/>
-      <geometry><mesh filename="cycloid_r20.stl" scale="0.001 0.001 0.001"/></geometry>
-      <material name="ring"/>
-    </visual>
-    <!-- shoulder mast up to J2 -->
-    <visual>
-      <origin xyz="0 0 0.043"/>
-      <geometry><cylinder radius="0.023" length="0.070"/></geometry>
-      <material name="link"/>
-    </visual>
-    <inertial>
-      <origin xyz="0 0 0.040"/>
-      <mass value="0.40"/>
-      <inertia ixx="1e-3" iyy="1e-3" izz="1e-3" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
+    <visual><origin xyz="0 0 -0.018"/>           <!-- J1 OUTPUT body (rotates), axis Z -->
+      <geometry><mesh filename="r20_body.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name="body"/></visual>
+    <visual><origin xyz="0 0 0.0184"/>           <!-- J1 round output plate -->
+      <geometry><cylinder radius="0.0315" length="0.005"/></geometry>
+      <material name="plate"/></visual>
+    <visual><origin xyz="0 -0.009 0.048"/>       <!-- mast: flat plate member -->
+      <geometry><box size="0.055 0.012 0.060"/></geometry>
+      <material name="link"/></visual>
+    <visual><origin xyz="0 -0.018 0.078" rpy="-1.5708 0 0"/>  <!-- J2 motor plate (fixed), axis Y -->
+      <geometry><mesh filename="r20_motor.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name="motor"/></visual>
+    <visual><origin xyz="0 -0.018 0.078" rpy="-1.5708 0 0"/>  <!-- J2 round motor plate -->
+      <geometry><cylinder radius="0.0315" length="0.005"/></geometry>
+      <material name="plate"/></visual>
+    <inertial><origin xyz="0 0 0.04"/><mass value="0.6"/>
+      <inertia ixx="1e-3" iyy="1e-3" izz="1e-3" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
-  <!-- ===== J2: shoulder pitch (about Y) ===== -->
+  <!-- ===== J2 shoulder pitch (Y) ===== -->
   <joint name="j2_shoulder" type="revolute">
-    <parent link="mast_link"/>
-    <child  link="upper_arm_link"/>
-    <origin xyz="0 0 0.078"/>
-    <axis xyz="0 1 0"/>
+    <parent link="mast_link"/><child link="upper_arm_link"/>
+    <origin xyz="0 0 0.078"/><axis xyz="0 1 0"/>
     <limit lower="-1.92" upper="1.92" effort="18" velocity="3.0"/>
     <dynamics damping="0.05"/>
   </joint>
 
   <link name="upper_arm_link">
-    <!-- J2 drive: real R20 mesh, axis rotated to Y, centered on the joint -->
-    <visual>
-      <origin xyz="0 -0.0287 0" rpy="-1.5708 0 0"/>
-      <geometry><mesh filename="cycloid_r20.stl" scale="0.001 0.001 0.001"/></geometry>
-      <material name="ring"/>
-    </visual>
-    <!-- upper arm -->
-    <visual>
-      <origin xyz="0 0 0.105"/>
-      <geometry><cylinder radius="0.021" length="0.210"/></geometry>
-      <material name="link"/>
-    </visual>
-    <inertial>
-      <origin xyz="0 0 0.105"/>
-      <mass value="0.35"/>
-      <inertia ixx="2e-3" iyy="2e-3" izz="5e-4" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
+    <visual><origin xyz="0 -0.018 0" rpy="-1.5708 0 0"/>     <!-- J2 OUTPUT body (+Y) -->
+      <geometry><mesh filename="r20_body.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name="body"/></visual>
+    <visual><origin xyz="0 0.0184 0" rpy="-1.5708 0 0"/>     <!-- J2 round output plate -->
+      <geometry><cylinder radius="0.0315" length="0.005"/></geometry>
+      <material name="plate"/></visual>
+    <visual><origin xyz="0 0.0184 0.105"/>                   <!-- upper arm: flat plate (+Y) -->
+      <geometry><box size="0.050 0.010 0.210"/></geometry>
+      <material name="link"/></visual>
+    <visual><origin xyz="0 0.018 0.210" rpy="1.5708 0 0"/>   <!-- J3 motor plate (fixed, +Y) -->
+      <geometry><mesh filename="r20_motor.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name="motor"/></visual>
+    <visual><origin xyz="0 0.018 0.210" rpy="1.5708 0 0"/>   <!-- J3 round motor plate -->
+      <geometry><cylinder radius="0.0315" length="0.005"/></geometry>
+      <material name="plate"/></visual>
+    <inertial><origin xyz="0 0 0.105"/><mass value="0.5"/>
+      <inertia ixx="2e-3" iyy="2e-3" izz="5e-4" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
-  <!-- ===== J3: elbow pitch (about Y) ===== -->
+  <!-- ===== J3 elbow pitch (Y) ===== -->
   <joint name="j3_elbow" type="revolute">
-    <parent link="upper_arm_link"/>
-    <child  link="forearm_link"/>
-    <origin xyz="0 0 0.210"/>
-    <axis xyz="0 1 0"/>
+    <parent link="upper_arm_link"/><child link="forearm_link"/>
+    <origin xyz="0 0 0.210"/><axis xyz="0 1 0"/>
     <limit lower="-2.62" upper="2.62" effort="15" velocity="3.0"/>
     <dynamics damping="0.05"/>
   </joint>
 
   <link name="forearm_link">
-    <!-- J3 drive: real R20 mesh, axis rotated to Y, centered on the joint -->
-    <visual>
-      <origin xyz="0 -0.0287 0" rpy="-1.5708 0 0"/>
-      <geometry><mesh filename="cycloid_r20.stl" scale="0.001 0.001 0.001"/></geometry>
-      <material name="ring"/>
-    </visual>
-    <!-- forearm -->
-    <visual>
-      <origin xyz="0 0 0.105"/>
-      <geometry><cylinder radius="0.018" length="0.210"/></geometry>
-      <material name="link"/>
-    </visual>
-    <!-- tool flange -->
-    <visual>
-      <origin xyz="0 0 0.213"/>
-      <geometry><cylinder radius="0.022" length="0.006"/></geometry>
-      <material name="frame"/>
-    </visual>
-    <!-- tool stub (tip ~ 0.276 m from J3 = reach check point) -->
-    <visual>
-      <origin xyz="0 0 0.246"/>
+    <visual><origin xyz="0 0.018 0" rpy="1.5708 0 0"/>       <!-- J3 OUTPUT body (-Y) -->
+      <geometry><mesh filename="r20_body.stl" scale="0.001 0.001 0.001"/></geometry>
+      <material name="body"/></visual>
+    <visual><origin xyz="0 -0.0184 0" rpy="1.5708 0 0"/>     <!-- J3 round output plate -->
+      <geometry><cylinder radius="0.0315" length="0.005"/></geometry>
+      <material name="plate"/></visual>
+    <visual><origin xyz="0 -0.0184 0.105"/>                  <!-- forearm: flat plate (-Y) -->
+      <geometry><box size="0.044 0.010 0.210"/></geometry>
+      <material name="link"/></visual>
+    <visual><origin xyz="0 -0.0184 0.213"/>                  <!-- tool flange -->
+      <geometry><box size="0.044 0.010 0.006"/></geometry>
+      <material name="plate"/></visual>
+    <visual><origin xyz="0 -0.0184 0.246"/>                  <!-- tool stub -->
       <geometry><cylinder radius="0.006" length="0.060"/></geometry>
-      <material name="tool"/>
-    </visual>
-    <inertial>
-      <origin xyz="0 0 0.105"/>
-      <mass value="0.30"/>
-      <inertia ixx="2e-3" iyy="2e-3" izz="4e-4" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
+      <material name="tool"/></visual>
+    <inertial><origin xyz="0 0 0.105"/><mass value="0.4"/>
+      <inertia ixx="2e-3" iyy="2e-3" izz="4e-4" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
-  <!-- ===== TCP: tool-center-point frame (welded to the forearm tip) =====
-       This is the workspace/IK target. Its body origin = the tool point. -->
+  <!-- ===== TCP ===== -->
   <joint name="tcp_fixed" type="fixed">
-    <parent link="forearm_link"/>
-    <child  link="tcp_link"/>
-    <origin xyz="0 0 0.276"/>
+    <parent link="forearm_link"/><child link="tcp_link"/>
+    <origin xyz="0 -0.0184 0.276"/>
   </joint>
   <link name="tcp_link">
-    <inertial>
-      <mass value="0.001"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
+    <inertial><mass value="0.001"/>
+      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
 </robot>
