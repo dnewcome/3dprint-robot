@@ -49,6 +49,23 @@ class IKController:
         """Seed the internal joint reference (the integrator state)."""
         self.q_ref = np.array(q0, float)
 
+    def solve_ik(self, target, q_seed, iters=3000, tol=1e-4):
+        """Absolute kinematic IK: joint config whose tip is at `target` (XYZ).
+        Used by the planner to turn a grasp pose into a goal configuration."""
+        q = np.array(q_seed, float)
+        err = 1e9
+        for _ in range(iters):
+            x = self.fk(q)
+            e = np.asarray(target, float) - x
+            err = np.linalg.norm(e)
+            if err < tol:
+                break
+            J = self.jac(q)
+            JJt = J @ J.T + (self.damping ** 2) * np.eye(3)
+            q = np.clip(q + J.T @ np.linalg.solve(JJt, e),
+                        self.lo[:self.n], self.hi[:self.n])
+        return q, float(err)
+
     def step_toward(self, q_meas, tcp_measured, x_target):
         """Integral feedback on the MEASURED tip: grow an internal joint
         reference until the real tool tip hits the target (absorbs gravity droop

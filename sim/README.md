@@ -16,6 +16,8 @@ python sim/sizing.py        # torque / reach / motor catalog
 python sim/backlash.py      # backlash -> tool-tip error budget
 python sim/twin_demo.py     # closed-loop reach-to-target (digital twin)
 python sim/twin_demo.py fidelity   # measure sim-vs-"real" fidelity
+python sim/gcode.py         # exact-path mode: draw a G-code shape
+python sim/plan.py          # autonomy mode: collision-free pick around an obstacle
 ```
 
 > **Display note:** MuJoCo's bundled GLFW here is Wayland-only, and its in-window
@@ -85,6 +87,18 @@ matters most and compares drive types.
   interface (`reach_demo`), and measures **fidelity** (`fidelity` arg) by
   replaying identical commands on a "truth" model and a mismatched "twin" and
   comparing tip paths.
+
+### The two task modes
+- `gcode.py` — **exact-path mode** (drawing / adhesive / paint): parse G-code
+  (`G0/G1 X Y Z F`), map it onto a work plane in the robot's reach, and stream it
+  through the controller so the tool tip traces the path (~0.7 mm). `--check`
+  reports drawing-line accuracy; pass a `.gcode` file to run your own toolpath.
+- `plan.py` — **autonomy mode** ("pick it up, don't collide"): give a grasp
+  pose; an RRT-Connect planner finds a **collision-free joint path** (world
+  obstacles + self-collision, checked in MuJoCo) and the arm executes it. Object
+  poses in `OBJECTS` are the seam a perception module (webcam → pose) or an LLM
+  ("pick the red block") would set. Key modeling point: the gripper is allowed to
+  contact the object it's grasping; everything else must avoid everything.
 
 ---
 
