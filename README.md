@@ -47,6 +47,11 @@ part is finalized for print yet — next step is a single-joint prototype.
 - `encoder_joint_spec.md` — integrated output-side encoder.
 - `DESIGN.md` — source of truth.
 
+**Simulation & analysis** → [`sim/`](sim/README.md) — MuJoCo model + tools to
+pose it, size the motors (torque/reach/motor-catalog), budget backlash, watch it
+hold/sag under gravity, and run a closed-loop reach controller (the digital-twin
+foundation). Where the motor/reduction/backlash trade-offs were quantified.
+
 **Parked explorations** → [`parked/`](parked/README.md) — cable/capstan drive,
 wrist mechanisms, harmonic ring, BLDC motor options + integrated actuator,
 and the now-merged joint-source files.
