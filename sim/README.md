@@ -29,18 +29,19 @@ python sim/plan.py          # autonomy mode: collision-free pick around an obsta
 
 ## The model
 
-`arm_trunk.urdf` — a **5-DOF arm**: J1 base yaw, J2 shoulder pitch, J3 elbow
-pitch (all the larger **R20 cycloidal** drive), J4 wrist pitch + J5 tool roll
-(the smaller **20:1 Micro cycloidal**). Reach ~0.49 m. The drives are real
-geometry: each R20 is split into a fixed motor half (motor plate + the actual
-stepper from the STEP) and a rotating output body, so the joints articulate like
-the hardware. Arm segments are flat plate members; round mounting plates match
-the round output faces.
+`arm_trunk.urdf` — a **5-DOF arm**: J1 base slew, J2 shoulder pitch, J3 elbow
+pitch, J4 wrist pitch, J5 tool roll. Every joint is the **20:1 Micro Cycloidal**
+except the base slew. The arm links **are the real printed sections** (from the
+build123d `arm_section.py`): each section integrates the rotating cyclo housing
+(upstream joint output) at one end and the NEMA17 motor plate (downstream mount)
+at the other — so the section mesh *is* the link and the actuators come with it.
+The base (slew→shoulder) and wrist (pitch→tool-roll) are 90° sections not yet
+designed → simple stand-in geometry.
 
-- **Meshes** (`meshes/`): `r20_motor.stl` / `r20_body.stl` (split R20),
-  `micro20.stl` (wrist drive) — converted from the vendor STEP files via gmsh.
-  **Not included** (Sweep Dynamics' paid geometry): convert your own purchased
-  STEP files into `sim/meshes/` to run the sim. See [`../NOTICE`](../NOTICE).
+- **Meshes** (`meshes/`): `arm_long.stl` — the long arm section, exported from
+  the CAD. **Not included** (embeds Sweep Dynamics' paid geometry): generate it
+  with `python sim/gen_meshes.py` (needs build123d + your purchased STEP). See
+  [`../NOTICE`](../NOTICE).
 - **Transmissions**: the URDF carries ROS `<transmission>` blocks recording each
   joint's reduction (20:1). `ros2_control` reads these; MuJoCo ignores them and
   the sim scripts inject their own actuators (see "Gotchas").
