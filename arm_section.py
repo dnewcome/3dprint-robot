@@ -38,6 +38,8 @@ ARM_T   = 4.9           # arm thickness (Y) = the NEMA-plate flange (~4.85mm)
 ARM_Z   = 36.0          # arm height (Z), the stiff anti-sag direction (< body OD)
 WALL    = 4.0           # body saddle wall
 WELD    = 2.0           # arm overlap into the plate edge for a solid butt joint
+CLEAR_R = BORE_R + 2     # disc-cavity clearance radius: arm end is radiused to
+                         # this so it never pokes toward the rotating internals
 # Flat-print alignment: the arm sits FLUSH with one face of the round body
 # (its -Y face) instead of centered, so that face is a flat print bed. The
 # plate is shifted in Y to share the same plane (its axis stays at Z=0).
@@ -75,11 +77,15 @@ def long_section(length=SEG_LEN):
     # face and the central boss stays fully clear for the next joint.
     plate_edge = length - ACT_R
     arm_end = plate_edge + WELD
-    arm = Pos((BORE_R + arm_end) / 2, ARM_YC, 0) * Box(arm_end - BORE_R, ARM_T, ARM_Z)
+    # arm blade to the plate edge, with its proximal end RADIUSED to the body's
+    # clearance circle (CLEAR_R) -- carved by subtracting a Y-axis cylinder -- so
+    # it wraps the body OD without poking into the disc cavity.
+    clear = Pos(0, ARM_YC, 0) * Rot(90, 0, 0) * Cylinder(CLEAR_R, ARM_T + 2)
+    arm = Pos(arm_end / 2, ARM_YC, 0) * Box(arm_end, ARM_T, ARM_Z) - clear
 
     # saddle: hugs the body OD over the arm's width only (flush, on the same -Y
     # face) to fair the flat arm into the round body. No bore intrusion.
-    saddle = Pos(0, ARM_YC, 0) * Rot(90, 0, 0) * (Cylinder(ACT_R + WALL, ARM_T) - Cylinder(ACT_R - 2, ARM_T))
+    saddle = Pos(0, ARM_YC, 0) * Rot(90, 0, 0) * (Cylinder(ACT_R + WALL, ARM_T) - Cylinder(CLEAR_R, ARM_T))
 
     return housing + saddle + arm + base
 
