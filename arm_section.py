@@ -19,22 +19,24 @@ tall in Z (gravity sag bends it about Y; stiffness ~ height^2).
 """
 import os, sys
 from build123d import (
-    import_step, export_stl, export_step, Solid, Box, Cylinder, Pos, Rot,
-    Plane, Polygon, extrude, Axis,
+    import_step, export_stl, export_step, Box, Cylinder, Pos, Rot,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MICRO = os.path.join(HERE, "vendor", "micro")
 
-# ---- micro actuator (20:1) + beam params (match arm_section.scad) ----
+# ---- micro actuator (20:1) + arm params ----
 ACT_R   = 21.0          # housing outer radius
 HOUS_H  = 18.2          # housing height (along its axis)
-BASE_H  = 9.0           # NEMA17 plate thickness
+BASE_H  = 9.0           # NEMA17 plate thickness (= the mount-plate edge)
 BORE_R  = 17.0          # housing inner bore (disc cavity) radius
 SEG_LEN = 150.0         # housing center -> base center
-BEAM_H  = 28.0          # beam height (Z) -- the stiff (anti-sag) direction
-BEAM_W  = 20.0          # beam width (Y) -- ~ actuator width
-WALL    = 4.0           # collar/gusset wall
+# The arm is the NEMA plate EXTENDED to the body: same thickness as the plate
+# edge (flush + centered on Y, so the plate edge stays clear and the body end is
+# flush, never proud), and tall in Z so it resists gravity sag (stiffness ~ Z^2).
+ARM_T   = BASE_H        # arm thickness (Y) = plate edge -> flush both ends
+ARM_Z   = 36.0          # arm height (Z), the stiff anti-sag direction (< body OD)
+WALL    = 4.0           # body saddle wall
 
 
 def _load(name):
@@ -57,19 +59,16 @@ def long_section(length=SEG_LEN):
     housing = _axis_to_y(_load("housing"))                 # proximal output, X=0
     base = Pos(length, 0, 0) * _axis_to_y(_load("base_nema17"))  # distal motor mount
 
-    # collar: grips the housing wall (inner bites to BORE_R+2, keeping the disc
-    # cavity clear), outer proud for the beam to fuse onto. Axis along Y.
-    collar = Rot(90, 0, 0) * (Cylinder(ACT_R + WALL, HOUS_H) - Cylinder(BORE_R + 2, HOUS_H))
+    # the arm = the plate extended to the body: a flat blade ARM_T thick (Y,
+    # flush + centered) and tall in Z. Starts at the bore wall (clears the disc
+    # cavity), runs to the base center where it merges with the plate.
+    arm = Pos((BORE_R + length) / 2, 0, 0) * Box(length - BORE_R, ARM_T, ARM_Z)
 
-    # beam: from the bore wall to the base center, tall in Z, centered on Y.
-    beam = Pos((BORE_R + length) / 2, 0, 0) * Box(length - BORE_R, BEAM_W, BEAM_H)
+    # saddle: hugs the body OD over the arm's width only (flush in Y) to fair the
+    # flat arm into the round body and carry the root moment. No bore intrusion.
+    saddle = Rot(90, 0, 0) * (Cylinder(ACT_R + WALL, ARM_T) - Cylinder(ACT_R - 2, ARM_T))
 
-    # gusset: triangular brace blending the beam down onto the base face.
-    tri = Polygon((length, -BEAM_H/2), (length, BEAM_H/2), (length - BEAM_H, -BEAM_H/2),
-                  align=None)
-    gusset = extrude(Plane.XZ * tri, BEAM_W/2, both=True)
-
-    return housing + collar + beam + gusset + base
+    return housing + saddle + arm + base
 
 
 def main():
