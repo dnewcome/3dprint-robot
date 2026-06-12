@@ -1,8 +1,5 @@
-# Third-party reference images (web-sourced, not ours to redistribute)
-413453b.avif
-wrist-gears.webp
-back.png
-back_big.png
+# Generated output (STL/STEP from the CAD scripts)
+out/
 
 # Paid vendor actuator geometry — track ONLY the two derivative-input parts
 # (the micro body + NEMA17 plate). Everything else you supply from your own

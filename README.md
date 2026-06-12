@@ -23,9 +23,10 @@ printer. Two design tracks live here:
 Active. **Current focus:** the integrated-actuator arm — the long arm section
 is modeled and prints as one fused solid; the two 90° end sections (base→slew,
 wrist→tool-roll) are next. No part is finalized for print yet.
-**Planned:** migrating the CAD from OpenSCAD to **[build123d](https://build123d.readthedocs.io)**
+**In progress:** migrating the CAD from OpenSCAD to **[build123d](https://build123d.readthedocs.io)**
 (Python + OCC) — it imports the vendor STEP files as exact solids, a better fit
-for the fused-actuator parts than mesh import.
+for the fused-actuator parts than mesh import. `arm_section.py` is the ported
+long section (the `.scad` stays as the no-dependency reference).
 
 ## Headline specs
 | | |
@@ -55,6 +56,9 @@ for the fused-actuator parts than mesh import.
 - `arm_section.scad` — **the integrated-actuator links** (current direction).
   Parametric; `PART=` selects `base` / `upper` / `forearm` / `wrist`. Fuses the
   Sweep Dynamics micro-cyclo body + NEMA17 plate into one printable section.
+- `arm_section.py` — the **build123d** port of the above (exact STEP solids →
+  `out/`). Needs `pip install build123d` + `extract_vendor_steps.py` (pulls the
+  two parts out of your purchased assembly STEP). Generated STL/STEP land in `out/`.
 - `cycloid_joint.scad` — **the from-scratch joint.** Parametric cartridge;
   `which=` selects J1/J2/J3, `part=` selects disc / ring / cam / flange / stator.
 - `arm_trunk.scad` — the 3-DOF from-scratch assembly (pose-able).
