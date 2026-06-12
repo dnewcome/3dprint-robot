@@ -56,8 +56,12 @@ are **deprecated** and archived in [`legacy/`](legacy/README.md).
 - `arm_section.py` — **the integrated-actuator links** (build123d, current
   direction). `python arm_section.py upper` fuses the Sweep micro-cyclo body +
   NEMA17 plate (exact STEP solids) into one printable section → `out/`.
+- `arm_assembly.py` — **the assembled robot, the single source of truth.**
+  Defines the kinematic chain once, derives joint frames from the part geometry,
+  and generates the sim model (`sim/arm_trunk.urdf`), the meshes, and a CAD
+  preview. Change a section length / motor here and it flows everywhere.
 - `extract_vendor_steps.py` — pulls the two parts out of your purchased
-  assembly STEP (run once before `arm_section.py`).
+  assembly STEP (run once before `arm_section.py` / `arm_assembly.py`).
 - `vendor/` — the two Sweep Dynamics input parts + how to get the rest
   ([`vendor/README.md`](vendor/README.md)). Paid geometry — read [`NOTICE`](NOTICE).
 - `encoder_joint_spec.md` — integrated output-side encoder.

@@ -29,7 +29,7 @@ g = 9.81
 RATIO = 20          # cycloidal reduction
 EFF   = 0.70        # cycloidal efficiency (printed, conservative)
 CONT  = 0.60        # stepper usable continuous fraction (thermal); BLDC similar
-CYCLO_PRINTED = 0.15  # printed cycloidal stage per joint (body+plates+bearings), kg
+CYCLO_PRINTED = 0.05  # printed MICRO cyclo stage per joint (body+plates+bearings), kg
 
 # ---------------- MOTOR CATALOG ----------------
 # name: dict(t=continuous torque at the MOTOR shaft [N*m], m=bare motor mass [kg],
@@ -58,13 +58,13 @@ def joint_mass(mo):
     return mo["m"] if mo["kind"] == "geared" else mo["m"] + CYCLO_PRINTED
 
 # ---------------- lumped-mass arm ----------------
-M_OUTBODY = 0.06    # printed output body at each joint (small lever, proximal)
+M_OUTBODY = 0.04    # printed micro output body at each joint (small lever, proximal)
 PAYLOAD   = 0.25
 M_TOOL    = 0.03
-RHO_PLA   = 700.0; MEM_W, MEM_T = 0.044, 0.010
+RHO_PLA   = 700.0; MEM_W, MEM_T = 0.036, 0.005   # the flat blade (ARM_Z x ARM_T)
 def member_mass(L): return RHO_PLA * MEM_W * MEM_T * L
-H_SH = 0.15
-L1d, L2d, L3, L4 = 0.210, 0.160, 0.050, 0.078   # default member lengths
+H_SH = 0.12
+L1d, L2d, L3, L4 = 0.150, 0.150, 0.050, 0.078   # default member lengths
 
 
 def build(L1, L2, m_elbow, m_wrist=None, payload=PAYLOAD):

@@ -30,12 +30,14 @@ from control import IKController                                   # noqa: E402
 URDF = os.path.join(HERE, "arm_trunk.urdf")
 
 # link capsules: name -> (fromto xyz->xyz in link frame, radius)  [meters]
+# The arm sections run +X (housing at the link origin -> base at ~0.15,-0.0046);
+# the wrist/tool stubs run +X too. Capsules follow that axis.
 CAPSULES = {
-    "mast_link":      ((0, 0, -0.04, 0, 0, 0.078), 0.040),
-    "upper_arm_link": ((0, 0.018, 0.0, 0, 0.018, 0.210), 0.030),
-    "forearm_link":   ((0, -0.018, 0.0, 0, -0.018, 0.160), 0.028),
-    "wrist_link":     ((0, -0.018, 0.0, 0, -0.018, 0.050), 0.030),
-    "tool_link":      ((0, 0, 0.0, 0, 0, 0.085), 0.012),
+    "mast_link":      ((0, 0, 0.0, 0, 0, 0.05), 0.035),
+    "upper_arm_link": ((0, 0, 0.0, 0.150, -0.0046, 0), 0.026),
+    "forearm_link":   ((0, 0, 0.0, 0.150, -0.0046, 0), 0.026),
+    "wrist_link":     ((0, 0, 0.0, 0.05, 0, 0), 0.026),
+    "tool_link":      ((0, 0, 0.0, 0.13, 0, 0), 0.012),
 }
 EXCLUDE = [("base_link", "mast_link"), ("mast_link", "upper_arm_link"),
            ("upper_arm_link", "forearm_link"), ("forearm_link", "wrist_link"),
@@ -43,13 +45,14 @@ EXCLUDE = [("base_link", "mast_link"), ("mast_link", "upper_arm_link"),
            ("base_link", "upper_arm_link")]
 
 # world (set by perception/LLM in real use). pos in base frame, half-sizes.
+# The arm reaches out +X at shoulder height (~z 0.12); targets sit in front.
 OBJECTS = {
-    "object":   dict(pos=(0.25, 0.10, 0.34), size=(0.014, 0.014, 0.020),
+    "object":   dict(pos=(0.30, 0.0, 0.06), size=(0.014, 0.014, 0.020),
                      rgba=(0.85, 0.2, 0.2, 1)),       # the thing to pick (red)
-    "obstacle": dict(pos=(0.20, 0.10, 0.40), size=(0.025, 0.04, 0.10),
-                     rgba=(0.3, 0.3, 0.35, 1)),       # a block in the direct path
+    "obstacle": dict(pos=(0.16, 0.10, 0.12), size=(0.03, 0.04, 0.06),
+                     rgba=(0.3, 0.3, 0.35, 1)),       # a block off to the side, in the path
 }
-GRASP = (0.25, 0.10, 0.355)                            # grasp pose just above the object
+GRASP = (0.30, 0.0, 0.09)                             # grasp pose just above the object
 
 
 def build_scene():

@@ -25,16 +25,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 URDF = os.path.join(HERE, "arm_trunk.urdf")
 
 # ---- realistic config: current build = R20 (NEMA17,20:1) joints + Micro wrists ----
-# link: (mass kg, COM [x,y,z] m)  -- dominant mass is each link's distal motor
-LINKS = {
-    "base_link":      (1.00, [0, 0,      0.030]),
-    "mast_link":      (0.50, [0, 0,      0.050]),
-    "upper_arm_link": (0.54, [0,  0.018, 0.150]),
-    "forearm_link":   (0.52, [0, -0.018, 0.120]),
-    "wrist_link":     (0.37, [0, -0.018, 0.030]),
-    "tool_link":      (0.28, [0, 0,      0.040]),   # includes 250 g payload
-    "tcp_link":       (0.001,[0, 0,      0]),
-}
+# Link masses + COM + inertia come straight from the URDF, which
+# arm_assembly.py generates from the build123d part geometry + motor estimates
+# (the single source of truth). This file only sets the ACTUATOR limits +
+# friction below.
 # per-joint actuator output torque (N*m): [J1,J2,J3,J4,J5]
 TAU_PEAK = [6.16, 6.16, 6.16, 6.16, 6.16]   # holding/stall (NEMA17 x20 x0.7eff)
 TAU_CONT = [3.70, 3.70, 3.70, 3.70, 3.70]   # continuous (thermal) limit
@@ -48,13 +42,7 @@ STEP = math.radians(3.0)
 
 
 def build():
-    spec = mujoco.MjSpec.from_file(URDF)
-    for b in spec.bodies:
-        if b.name in LINKS:
-            m, com = LINKS[b.name]
-            b.mass = m
-            b.ipos = com                           # COM; inertia left as imported
-            # (inertia irrelevant for static gravity hold)
+    spec = mujoco.MjSpec.from_file(URDF)         # masses/COM already in the URDF
     for i, j in enumerate(spec.joints):
         a = spec.add_actuator()
         a.name, a.target = j.name, j.name

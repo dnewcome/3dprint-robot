@@ -32,8 +32,9 @@ BACKLASH_DEG = {
     "j4_wrist_pitch": 0.2,
     "j5_tool_roll":   0.2,
 }
-# worst-case pose for lever arms: arm extended out + down a bit
-POSE_DEG = [0, 80, 20, 30, 0]
+# worst-case pose for lever arms: arm reached out (it extends +X at q=0), with
+# small bends so the tip is far from every joint axis -> biggest lever arms.
+POSE_DEG = [0, 10, 20, 15, 0]
 
 
 def tip_budget(backlash_deg, pose_deg=POSE_DEG, verbose=True):

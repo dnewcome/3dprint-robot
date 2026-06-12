@@ -29,18 +29,24 @@ python sim/plan.py          # autonomy mode: collision-free pick around an obsta
 
 ## The model
 
-`arm_trunk.urdf` — a **5-DOF arm**: J1 base slew, J2 shoulder pitch, J3 elbow
-pitch, J4 wrist pitch, J5 tool roll. Every joint is the **20:1 Micro Cycloidal**
-except the base slew. The arm links **are the real printed sections** (from the
-build123d `arm_section.py`): each section integrates the rotating cyclo housing
-(upstream joint output) at one end and the NEMA17 motor plate (downstream mount)
-at the other — so the section mesh *is* the link and the actuators come with it.
-The base (slew→shoulder) and wrist (pitch→tool-roll) are 90° sections not yet
-designed → simple stand-in geometry.
+`arm_trunk.urdf` is **GENERATED** — it is not hand-authored. The single source
+of truth for the assembled robot is **`../arm_assembly.py`** (build123d): it
+defines the kinematic chain once and derives each joint frame from the part
+geometry, then emits the URDF + the section meshes + a CAD preview. Edit the
+assembly, not the URDF.
 
-- **Meshes** (`meshes/`): `arm_long.stl` — the long arm section, exported from
-  the CAD. **Not included** (embeds Sweep Dynamics' paid geometry): generate it
-  with `python sim/gen_meshes.py` (needs build123d + your purchased STEP). See
+The arm: **5-DOF** — J1 base slew, J2 shoulder, J3 elbow, J4 wrist pitch, J5 tool
+roll. Every joint is the **20:1 Micro Cycloidal** except the base slew. The
+upper-arm + forearm links **are the real printed sections** (`arm_section.py`):
+each integrates the rotating cyclo housing (upstream output) at one end and the
+NEMA17 motor plate (downstream mount) at the other — the section mesh *is* the
+link. Base (slew→shoulder) and wrist (pitch→tool-roll) are 90° sections not yet
+designed → simple stand-in geometry. Link masses/COM are computed from the part
+geometry, so the analysis scripts read them straight from the model.
+
+- **Regenerate** the model + meshes (needs build123d + your purchased STEP — the
+  meshes embed Sweep Dynamics' paid geometry and are `.gitignore`d):
+  `python extract_vendor_steps.py && python arm_assembly.py`. See
   [`../NOTICE`](../NOTICE).
 - **Transmissions**: the URDF carries ROS `<transmission>` blocks recording each
   joint's reduction (20:1). `ros2_control` reads these; MuJoCo ignores them and
