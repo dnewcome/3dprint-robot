@@ -29,9 +29,16 @@ PI = 3.14159265
 
 # ---- physical params (MEASURED where noted; edit as parts are weighed) ----
 PLA      = 1.24e-6      # kg/mm^3 (PLA ~1.24 g/cc) -> section plastic mass
-ACTUATOR = 0.188        # MEASURED full actuator (motor + cyclo), kg  <-- real
+ACTUATOR = 0.188        # MEASURED full actuator (TINY PANCAKE stepper + cyclo), kg
 PAYLOAD  = 0.25         # tool payload, kg
-SEG      = 150          # long-section length, mm (the one knob for reach)
+SEG      = 75           # MEASURED prototype section length, mm (joint-to-joint)
+# MEASURED limit: 1.8 kg on a scale at 75mm = 1.32 N*m output, where the
+# OPEN-LOOP STEPPER starts MISSING STEPS (the printed cyclo does NOT slip). So
+# this is the current motor-drive limit, not a mechanical cap -- tunable up with
+# more phase current / a stiffer driver / closed-loop, toward the motor's real
+# torque. Governs reach/payload at the CURRENT drive settings.
+TORQUE_MICRO = 1.32     # output torque at motor step-loss, N*m  <-- MEASURED
+TORQUE_SLEW  = 3.0      # base slew (bigger drive, not yet measured), N*m
 
 
 def distal(length_mm):
@@ -80,31 +87,31 @@ CHAIN = [
 
     dict(link="mast_link", parent="base_link",
          joint=dict(name="j1_yaw", axis=(0, 0, 1), origin=(0, 0, 0.065),
-                    limit=(-PI, PI), effort=20, vel=3.0, damp=0.05),
+                    limit=(-PI, PI), effort=TORQUE_SLEW, vel=3.0, damp=0.05),
          geom=("box", (0.05, 0.05, 0.05), (0, 0, 0.025)),
          mass=ACTUATOR + 0.02, com=(0, 0, 0.025), I=box_I(0.21, 0.05, 0.05, 0.05)),
 
     dict(link="upper_arm_link", parent="mast_link",
          joint=dict(name="j2_shoulder", axis=(0, 1, 0), origin=(0, 0, 0.055),
-                    limit=(-1.92, 1.92), effort=18, vel=3.0, damp=0.05),
+                    limit=(-1.92, 1.92), effort=TORQUE_MICRO, vel=3.0, damp=0.05),
          geom=("mesh", "arm_long.stl"), section=SEG,
          mass=_m, com=_c, I=_I),
 
     dict(link="forearm_link", parent="upper_arm_link",
          joint=dict(name="j3_elbow", axis=(0, 1, 0), origin=distal(SEG),
-                    limit=(-2.62, 2.62), effort=15, vel=3.0, damp=0.05),
+                    limit=(-2.62, 2.62), effort=TORQUE_MICRO, vel=3.0, damp=0.05),
          geom=("mesh", "arm_long.stl"), section=SEG,
          mass=_m, com=_c, I=_I),
 
     dict(link="wrist_link", parent="forearm_link",
          joint=dict(name="j4_wrist_pitch", axis=(0, 1, 0), origin=distal(SEG),
-                    limit=(-1.92, 1.92), effort=6, vel=3.0, damp=0.03),
+                    limit=(-1.92, 1.92), effort=TORQUE_MICRO, vel=3.0, damp=0.03),
          geom=("box", (0.05, 0.042, 0.042), (0.025, 0, 0)),
          mass=ACTUATOR + 0.02, com=(0.025, 0, 0), I=box_I(0.21, 0.05, 0.042, 0.042)),
 
     dict(link="tool_link", parent="wrist_link",
          joint=dict(name="j5_tool_roll", axis=(1, 0, 0), origin=(0.05, 0, 0),
-                    limit=(-PI, PI), effort=4, vel=3.0, damp=0.03),
+                    limit=(-PI, PI), effort=TORQUE_MICRO, vel=3.0, damp=0.03),
          geom=("tool",),
          mass=0.03 + PAYLOAD, com=(0.03, 0, 0), I=box_I(0.28, 0.06, 0.04, 0.04)),
 ]

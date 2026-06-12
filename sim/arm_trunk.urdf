@@ -16,7 +16,7 @@
   <joint name="j1_yaw" type="revolute">
     <parent link="base_link"/><child link="mast_link"/>
     <origin xyz="0.0000 0.0000 0.0650"/><axis xyz="0 0 1"/>
-    <limit lower="-3.1416" upper="3.1416" effort="20" velocity="3.0"/>
+    <limit lower="-3.1416" upper="3.1416" effort="3.0" velocity="3.0"/>
     <dynamics damping="0.05"/>
   </joint>
 
@@ -28,31 +28,31 @@
   <joint name="j2_shoulder" type="revolute">
     <parent link="mast_link"/><child link="upper_arm_link"/>
     <origin xyz="0.0000 0.0000 0.0550"/><axis xyz="0 1 0"/>
-    <limit lower="-1.9200" upper="1.9200" effort="18" velocity="3.0"/>
+    <limit lower="-1.9200" upper="1.9200" effort="1.32" velocity="3.0"/>
     <dynamics damping="0.05"/>
   </joint>
 
   <link name="upper_arm_link">
     <visual><geometry><mesh filename="arm_long.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
-    <inertial><origin xyz="0.1404 -0.0047 -0.0000"/><mass value="0.2148"/><inertia ixx="5.07e-05" iyy="7.32e-04" izz="6.94e-04" ixy="0" ixz="0" iyz="0"/></inertial>
+    <inertial><origin xyz="0.0729 -0.0046 -0.0000"/><mass value="0.1984"/><inertia ixx="4.68e-05" iyy="2.83e-04" izz="2.48e-04" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
   <joint name="j3_elbow" type="revolute">
     <parent link="upper_arm_link"/><child link="forearm_link"/>
-    <origin xyz="0.1500 -0.0046 0.0000"/><axis xyz="0 1 0"/>
-    <limit lower="-2.6200" upper="2.6200" effort="15" velocity="3.0"/>
+    <origin xyz="0.0750 -0.0046 0.0000"/><axis xyz="0 1 0"/>
+    <limit lower="-2.6200" upper="2.6200" effort="1.32" velocity="3.0"/>
     <dynamics damping="0.05"/>
   </joint>
 
   <link name="forearm_link">
     <visual><geometry><mesh filename="arm_long.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
-    <inertial><origin xyz="0.1404 -0.0047 -0.0000"/><mass value="0.2148"/><inertia ixx="5.07e-05" iyy="7.32e-04" izz="6.94e-04" ixy="0" ixz="0" iyz="0"/></inertial>
+    <inertial><origin xyz="0.0729 -0.0046 -0.0000"/><mass value="0.1984"/><inertia ixx="4.68e-05" iyy="2.83e-04" izz="2.48e-04" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
   <joint name="j4_wrist_pitch" type="revolute">
     <parent link="forearm_link"/><child link="wrist_link"/>
-    <origin xyz="0.1500 -0.0046 0.0000"/><axis xyz="0 1 0"/>
-    <limit lower="-1.9200" upper="1.9200" effort="6" velocity="3.0"/>
+    <origin xyz="0.0750 -0.0046 0.0000"/><axis xyz="0 1 0"/>
+    <limit lower="-1.9200" upper="1.9200" effort="1.32" velocity="3.0"/>
     <dynamics damping="0.03"/>
   </joint>
 
@@ -64,7 +64,7 @@
   <joint name="j5_tool_roll" type="revolute">
     <parent link="wrist_link"/><child link="tool_link"/>
     <origin xyz="0.0500 0.0000 0.0000"/><axis xyz="1 0 0"/>
-    <limit lower="-3.1416" upper="3.1416" effort="4" velocity="3.0"/>
+    <limit lower="-3.1416" upper="3.1416" effort="1.32" velocity="3.0"/>
     <dynamics damping="0.03"/>
   </joint>
 

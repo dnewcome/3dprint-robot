@@ -30,8 +30,12 @@ URDF = os.path.join(HERE, "arm_trunk.urdf")
 # (the single source of truth). This file only sets the ACTUATOR limits +
 # friction below.
 # per-joint actuator output torque (N*m): [J1,J2,J3,J4,J5]
-TAU_PEAK = [6.16, 6.16, 6.16, 6.16, 6.16]   # holding/stall (NEMA17 x20 x0.7eff)
-TAU_CONT = [3.70, 3.70, 3.70, 3.70, 3.70]   # continuous (thermal) limit
+# MEASURED: a tiny pancake stepper (chosen for light weight) misses steps at
+# 1.32 N*m output (1.8 kg @ 75mm) -- that's the effective cap, NOT the thermal
+# limit, and it's tunable up (more current / closed-loop). J1 slew is a bigger,
+# un-measured drive. See arm_assembly.TORQUE_MICRO.
+TAU_PEAK = [3.0, 1.32, 1.32, 1.32, 1.32]
+TAU_CONT = [3.0, 1.32, 1.32, 1.32, 1.32]
 # frictionloss = Coulomb friction reflected to the joint output. Models the
 # NON-BACKDRIVABILITY of a high-reduction cyclo+stepper (~motor detent x ratio +
 # gear friction): resists back-driving from reaction torques. Set 0 to feel the
