@@ -30,14 +30,19 @@ ACT_R   = 21.0          # housing outer radius
 HOUS_H  = 18.2          # housing height (along its axis)
 BASE_H  = 9.0           # NEMA17 plate thickness (= the mount-plate edge)
 BORE_R  = 17.0          # housing inner bore (disc cavity) radius
-SEG_LEN = 150.0         # housing center -> base center
+SEG_LEN = 75.0          # housing center -> base center (short test-print length)
 # The arm is the NEMA plate EXTENDED to the body: same thickness as the plate
 # edge (flush + centered on Y, so the plate edge stays clear and the body end is
 # flush, never proud), and tall in Z so it resists gravity sag (stiffness ~ Z^2).
-ARM_T   = BASE_H        # arm thickness (Y) = plate edge -> flush both ends
+ARM_T   = 4.9           # arm thickness (Y) = the NEMA-plate flange (~4.85mm)
 ARM_Z   = 36.0          # arm height (Z), the stiff anti-sag direction (< body OD)
 WALL    = 4.0           # body saddle wall
 WELD    = 2.0           # arm overlap into the plate edge for a solid butt joint
+# Flat-print alignment: the arm sits FLUSH with one face of the round body
+# (its -Y face) instead of centered, so that face is a flat print bed. The
+# plate is shifted in Y to share the same plane (its axis stays at Z=0).
+ARM_FACE = -HOUS_H / 2          # the body's -Y face = the flat print plane
+ARM_YC   = ARM_FACE + ARM_T/2   # arm Y-center so its outer face is on that plane
 
 
 def _load(name):
@@ -57,21 +62,24 @@ def _axis_to_y(solid):
 
 
 def long_section(length=SEG_LEN):
-    # BOTH actuators centered on the same line = the arm axis (Z=0, Y=0):
+    # Both actuator AXES on the same center (Z=0); the plate is shifted in Y so
+    # its near face is coplanar with the body's -Y face (flat print bed).
     housing = _axis_to_y(_load("housing"))                 # proximal output, X=0
-    base = Pos(length, 0, 0) * _axis_to_y(_load("base_nema17"))  # distal mount, centered
+    # flip the plate (Rot about X) so its FLANGE faces the print plane (-Y),
+    # right-side-up, with the boss facing up where the next joint mounts.
+    base = Pos(length, ARM_FACE + BASE_H/2, 0) * Rot(180, 0, 0) * _axis_to_y(_load("base_nema17"))
 
-    # the arm is a flat blade ARM_T thick (Y, flush + centered) and tall in Z. It
-    # ENDS at the plate's near (-X) edge (plate is 42mm, half = ACT_R), with a
-    # small weld overlap -- so it never covers the plate face and the central
-    # boss stays fully clear for the next joint to mount.
+    # the arm is a flat blade ARM_T thick (Y) sitting FLUSH on the body's -Y face
+    # (ARM_YC), tall in Z. It ENDS at the plate's near (-X) edge (plate is 42mm,
+    # half = ACT_R) with a small weld overlap -- so it never covers the plate
+    # face and the central boss stays fully clear for the next joint.
     plate_edge = length - ACT_R
     arm_end = plate_edge + WELD
-    arm = Pos((BORE_R + arm_end) / 2, 0, 0) * Box(arm_end - BORE_R, ARM_T, ARM_Z)
+    arm = Pos((BORE_R + arm_end) / 2, ARM_YC, 0) * Box(arm_end - BORE_R, ARM_T, ARM_Z)
 
-    # saddle: hugs the body OD over the arm's width only (flush in Y) to fair the
-    # flat arm into the round body and carry the root moment. No bore intrusion.
-    saddle = Rot(90, 0, 0) * (Cylinder(ACT_R + WALL, ARM_T) - Cylinder(ACT_R - 2, ARM_T))
+    # saddle: hugs the body OD over the arm's width only (flush, on the same -Y
+    # face) to fair the flat arm into the round body. No bore intrusion.
+    saddle = Pos(0, ARM_YC, 0) * Rot(90, 0, 0) * (Cylinder(ACT_R + WALL, ARM_T) - Cylinder(ACT_R - 2, ARM_T))
 
     return housing + saddle + arm + base
 
