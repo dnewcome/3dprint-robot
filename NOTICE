@@ -1,0 +1,24 @@
+NOTICE — third-party geometry
+=============================
+
+This repository's own work (OpenSCAD source, Python simulation, docs, and the
+robot-arm designs) is licensed under the MIT License (see LICENSE).
+
+The MIT License does NOT extend to the bundled third-party actuator geometry:
+
+  vendor/micro/housing.stl       — "body" of the
+  vendor/micro/base_nema17.stl   — NEMA17 motor plate of the
+
+      Sweep Dynamics 20:1 Micro Cycloidal Drive
+      https://www.sweepdynamics.com
+
+These two meshes are included only as the INPUT geometry that the arm sections
+are designed around (the printed links fuse to these interfaces) — i.e. as part
+of a derivative arm design. They remain the intellectual property of Sweep
+Dynamics. They are NOT a substitute for the product: the full actuator (discs,
+shaft, end cap, bearings, hardware, the larger base-slew drive, and all STEP
+sources) is NOT included here. To build the arm you must purchase the actuator
+files from Sweep Dynamics.
+
+If you are Sweep Dynamics and would prefer these meshes not be redistributed,
+open an issue and they will be removed.

@@ -4,6 +4,19 @@ wrist-gears.webp
 back.png
 back_big.png
 
+# Paid vendor actuator geometry — track ONLY the two derivative-input parts
+# (the micro body + NEMA17 plate). Everything else you supply from your own
+# Sweep Dynamics purchase. See vendor/README.md + NOTICE.
+vendor/*
+!vendor/README.md
+!vendor/micro/
+vendor/micro/*
+!vendor/micro/housing.stl
+!vendor/micro/base_nema17.stl
+
+# Vendor-derived sim meshes are user-supplied (convert your purchased STEP).
+sim/meshes/
+
 # OS / editor cruft
 .DS_Store
 *.swp

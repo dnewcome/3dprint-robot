@@ -39,6 +39,8 @@ the round output faces.
 
 - **Meshes** (`meshes/`): `r20_motor.stl` / `r20_body.stl` (split R20),
   `micro20.stl` (wrist drive) — converted from the vendor STEP files via gmsh.
+  **Not included** (Sweep Dynamics' paid geometry): convert your own purchased
+  STEP files into `sim/meshes/` to run the sim. See [`../NOTICE`](../NOTICE).
 - **Transmissions**: the URDF carries ROS `<transmission>` blocks recording each
   joint's reduction (20:1). `ros2_control` reads these; MuJoCo ignores them and
   the sim scripts inject their own actuators (see "Gotchas").

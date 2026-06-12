@@ -1,20 +1,31 @@
 # 3D-Printed Cycloidal Robot Arm
 
-A 3D-printable robot arm built around **one parametric cycloidal joint**,
-used three times. The near-term build target is a **3-DOF positioning
-trunk** (base + shoulder + elbow); a wrist and/or BLDC actuators are parked
-upgrades. Designed for **low backlash**, **commodity parts** (NEMA17, 608
-bearings, magnets), and **fast iteration** on a home printer.
+A 3D-printable cycloidal robot arm, designed for **low backlash**, **commodity
+parts** (NEMA17, 608 bearings, magnets), and **fast iteration** on a home
+printer. Two design tracks live here:
 
-> **One joint, three instances.** J1/J2/J3 are the same cartridge
-> (`cycloid_joint.scad`) at three sizes. J1 is that cartridge stood
-> vertical, its output bearing sized up to carry the arm's tipping moment.
+- **Integrated-actuator arm (current direction).** A **5-DOF** arm built from
+  printed **sections** that fuse directly to off-the-shelf
+  [Sweep Dynamics](https://www.sweepdynamics.com) **20:1 Micro Cycloidal**
+  drives (a larger cycloidal at the base slew). Each section integrates one
+  half of a joint at each end — the rotating cyclo **body** (upstream joint
+  output) on one end, the **NEMA17 motor plate** (downstream motor mount) on
+  the other — so the link *is* the actuator mount. See `arm_section.scad`.
+- **From-scratch parametric joint (original track).** A **3-DOF** positioning
+  trunk built around **one parametric cycloidal joint** (`cycloid_joint.scad`)
+  used three times — no bought actuators. Kept as the ground-up alternative.
+
+![integrated arm section](images/arm_section.png)
 
 **Full design rationale → [DESIGN.md](DESIGN.md).** This README is the map.
 
 ## Status
-Architecture converged and **pared down to a buildable 3-DOF trunk.** No
-part is finalized for print yet — next step is a single-joint prototype.
+Active. **Current focus:** the integrated-actuator arm — the long arm section
+is modeled and prints as one fused solid; the two 90° end sections (base→slew,
+wrist→tool-roll) are next. No part is finalized for print yet.
+**Planned:** migrating the CAD from OpenSCAD to **[build123d](https://build123d.readthedocs.io)**
+(Python + OCC) — it imports the vendor STEP files as exact solids, a better fit
+for the fused-actuator parts than mesh import.
 
 ## Headline specs
 | | |
@@ -41,9 +52,14 @@ part is finalized for print yet — next step is a single-joint prototype.
 
 ## Repo map
 **Build path (root)**
-- `cycloid_joint.scad` — **THE joint.** Parametric cartridge; `which=` selects
-  J1/J2/J3, `part=` selects disc / ring / cam / flange / stator / assembly.
-- `arm_trunk.scad` — **the build-target assembly** (3-DOF, pose-able).
+- `arm_section.scad` — **the integrated-actuator links** (current direction).
+  Parametric; `PART=` selects `base` / `upper` / `forearm` / `wrist`. Fuses the
+  Sweep Dynamics micro-cyclo body + NEMA17 plate into one printable section.
+- `cycloid_joint.scad` — **the from-scratch joint.** Parametric cartridge;
+  `which=` selects J1/J2/J3, `part=` selects disc / ring / cam / flange / stator.
+- `arm_trunk.scad` — the 3-DOF from-scratch assembly (pose-able).
+- `vendor/` — the two Sweep Dynamics input parts + how to get the rest
+  ([`vendor/README.md`](vendor/README.md)). Paid geometry — read [`NOTICE`](NOTICE).
 - `encoder_joint_spec.md` — integrated output-side encoder.
 - `DESIGN.md` — source of truth.
 
@@ -59,16 +75,18 @@ and the now-merged joint-source files.
 ## Viewing the CAD
 [OpenSCAD](https://openscad.org). Render a part to PNG:
 ```bash
-# the 3-DOF trunk
-openscad -o arm_trunk.png --imgsize=850,1000 arm_trunk.scad
+# an integrated-actuator arm section (current direction)
+openscad -o images/arm_section.png -D 'PART="upper"' arm_section.scad
+
+# the from-scratch 3-DOF trunk
+openscad -o images/arm_trunk.png --imgsize=850,1000 arm_trunk.scad
 
 # the J2 cycloid disc (the actual printable part)
-openscad -o disc.png -D 'which="J2"' -D 'part="disc"' cycloid_joint.scad
-
-# a joint assembly / a different joint
-openscad -o j1.png -D 'which="J1"' -D 'part="assembly"' cycloid_joint.scad
+openscad -o images/disc.png -D 'which="J2"' -D 'part="disc"' cycloid_joint.scad
 ```
-Each joint echoes its ratio, bearing OD, and ring OD to the console.
+> `arm_section.scad` imports `vendor/micro/*.stl`. The two tracked parts are
+> enough to render the link; the full actuator you supply from your Sweep
+> Dynamics purchase (see [`vendor/README.md`](vendor/README.md)).
 
 ## Prototype plan
 1. **One joint (J2)** — print the disc, pin ring, cam, flange + BB race;
@@ -82,6 +100,13 @@ Each joint echoes its ratio, bearing OD, and ring OD to the console.
 - [Mishin Machine](https://youtube.com/@MishinMachine) — printed cable/wave-gear robotics.
 - [Morse Dynamics](https://instagram.com/morsedynamics) — related printed robotics / drivetrains.
 - [Skyentific](https://youtube.com/@Skyentific) — printed BLDC + cycloidal joint actuators.
+
+## License & attribution
+This project's own work (CAD source, simulation, docs) is **MIT** licensed
+([`LICENSE`](LICENSE)). It is **not** affiliated with Sweep Dynamics. The two
+bundled actuator meshes under `vendor/` are Sweep Dynamics' paid geometry,
+included as derivative-design input with attribution — see [`NOTICE`](NOTICE).
+Buy the actuators at [sweepdynamics.com](https://www.sweepdynamics.com).
 
 ---
 *Developed iteratively; see DESIGN.md for the full reasoning and the parked alternatives.*
