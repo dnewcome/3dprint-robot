@@ -37,10 +37,7 @@ SEG_LEN = 150.0         # housing center -> base center
 ARM_T   = BASE_H        # arm thickness (Y) = plate edge -> flush both ends
 ARM_Z   = 36.0          # arm height (Z), the stiff anti-sag direction (< body OD)
 WALL    = 4.0           # body saddle wall
-# Drop the distal motor plate DOWN so the joint axis sits at the arm's lower
-# edge and the plate "hangs off" it -- the next link's body/motor then swing
-# clear of this arm instead of colliding with it. (axis at the edge = ARM_Z/2)
-BASE_DZ = ARM_Z / 2     # downward (-Z) offset of the distal NEMA plate
+WELD    = 2.0           # arm overlap into the plate edge for a solid butt joint
 
 
 def _load(name):
@@ -60,13 +57,17 @@ def _axis_to_y(solid):
 
 
 def long_section(length=SEG_LEN):
+    # BOTH actuators centered on the same line = the arm axis (Z=0, Y=0):
     housing = _axis_to_y(_load("housing"))                 # proximal output, X=0
-    base = Pos(length, 0, -BASE_DZ) * _axis_to_y(_load("base_nema17"))  # distal mount, hung low
+    base = Pos(length, 0, 0) * _axis_to_y(_load("base_nema17"))  # distal mount, centered
 
-    # the arm = the plate extended to the body: a flat blade ARM_T thick (Y,
-    # flush + centered) and tall in Z. Starts at the bore wall (clears the disc
-    # cavity), runs to the base center where it merges with the plate.
-    arm = Pos((BORE_R + length) / 2, 0, 0) * Box(length - BORE_R, ARM_T, ARM_Z)
+    # the arm is a flat blade ARM_T thick (Y, flush + centered) and tall in Z. It
+    # ENDS at the plate's near (-X) edge (plate is 42mm, half = ACT_R), with a
+    # small weld overlap -- so it never covers the plate face and the central
+    # boss stays fully clear for the next joint to mount.
+    plate_edge = length - ACT_R
+    arm_end = plate_edge + WELD
+    arm = Pos((BORE_R + arm_end) / 2, 0, 0) * Box(arm_end - BORE_R, ARM_T, ARM_Z)
 
     # saddle: hugs the body OD over the arm's width only (flush in Y) to fair the
     # flat arm into the round body and carry the root moment. No bore intrusion.
