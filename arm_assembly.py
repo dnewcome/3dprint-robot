@@ -39,6 +39,13 @@ SEG      = 75           # MEASURED prototype section length, mm (joint-to-joint)
 # torque. Governs reach/payload at the CURRENT drive settings.
 TORQUE_MICRO = 1.32     # output torque at motor step-loss, N*m  <-- MEASURED
 TORQUE_SLEW  = 3.0      # base slew (bigger drive, not yet measured), N*m
+# J2 (shoulder) sits at the BASE -> a bigger/heavier motor there costs nothing
+# downstream (its weight loads only the slew). Put a full NEMA17 there for torque
+# headroom; keep the tiny pancake at J3-J5 where weight hangs off the arm.
+ACTUATOR_SHOULDER = 0.32   # NEMA17 + micro cyclo, kg (on the base side of J2)
+TORQUE_SHOULDER   = 3.0    # NEMA17 @20:1 driven hard, N*m. NOTE: the micro cyclo
+                           # is only confirmed to 1.32 N*m -- verify it transmits
+                           # this much before relying on it.
 
 
 def distal(length_mm):
@@ -89,11 +96,11 @@ CHAIN = [
          joint=dict(name="j1_yaw", axis=(0, 0, 1), origin=(0, 0, 0.065),
                     limit=(-PI, PI), effort=TORQUE_SLEW, vel=3.0, damp=0.05),
          geom=("box", (0.05, 0.05, 0.05), (0, 0, 0.025)),
-         mass=ACTUATOR + 0.02, com=(0, 0, 0.025), I=box_I(0.21, 0.05, 0.05, 0.05)),
+         mass=ACTUATOR_SHOULDER + 0.02, com=(0, 0, 0.025), I=box_I(0.34, 0.05, 0.05, 0.05)),
 
     dict(link="upper_arm_link", parent="mast_link",
          joint=dict(name="j2_shoulder", axis=(0, 1, 0), origin=(0, 0, 0.055),
-                    limit=(-1.92, 1.92), effort=TORQUE_MICRO, vel=3.0, damp=0.05),
+                    limit=(-1.92, 1.92), effort=TORQUE_SHOULDER, vel=3.0, damp=0.05),
          geom=("mesh", "arm_long.stl"), section=SEG,
          mass=_m, com=_c, I=_I),
 

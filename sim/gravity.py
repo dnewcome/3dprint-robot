@@ -34,8 +34,10 @@ URDF = os.path.join(HERE, "arm_trunk.urdf")
 # 1.32 N*m output (1.8 kg @ 75mm) -- that's the effective cap, NOT the thermal
 # limit, and it's tunable up (more current / closed-loop). J1 slew is a bigger,
 # un-measured drive. See arm_assembly.TORQUE_MICRO.
-TAU_PEAK = [3.0, 1.32, 1.32, 1.32, 1.32]
-TAU_CONT = [3.0, 1.32, 1.32, 1.32, 1.32]
+# J1 slew + J2 shoulder = bigger motors (shoulder NEMA17 @ base, free weight);
+# J3-J5 = the measured tiny pancake (1.32 N*m step-loss).
+TAU_PEAK = [3.0, 3.0, 1.32, 1.32, 1.32]
+TAU_CONT = [3.0, 3.0, 1.32, 1.32, 1.32]
 # frictionloss = Coulomb friction reflected to the joint output. Models the
 # NON-BACKDRIVABILITY of a high-reduction cyclo+stepper (~motor detent x ratio +
 # gear friction): resists back-driving from reaction torques. Set 0 to feel the
