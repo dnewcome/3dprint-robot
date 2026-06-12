@@ -37,6 +37,10 @@ SEG_LEN = 150.0         # housing center -> base center
 ARM_T   = BASE_H        # arm thickness (Y) = plate edge -> flush both ends
 ARM_Z   = 36.0          # arm height (Z), the stiff anti-sag direction (< body OD)
 WALL    = 4.0           # body saddle wall
+# Drop the distal motor plate DOWN so the joint axis sits at the arm's lower
+# edge and the plate "hangs off" it -- the next link's body/motor then swing
+# clear of this arm instead of colliding with it. (axis at the edge = ARM_Z/2)
+BASE_DZ = ARM_Z / 2     # downward (-Z) offset of the distal NEMA plate
 
 
 def _load(name):
@@ -57,7 +61,7 @@ def _axis_to_y(solid):
 
 def long_section(length=SEG_LEN):
     housing = _axis_to_y(_load("housing"))                 # proximal output, X=0
-    base = Pos(length, 0, 0) * _axis_to_y(_load("base_nema17"))  # distal motor mount
+    base = Pos(length, 0, -BASE_DZ) * _axis_to_y(_load("base_nema17"))  # distal mount, hung low
 
     # the arm = the plate extended to the body: a flat blade ARM_T thick (Y,
     # flush + centered) and tall in Z. Starts at the bore wall (clears the disc
