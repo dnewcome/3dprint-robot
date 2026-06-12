@@ -27,10 +27,9 @@ from build123d import (export_stl, export_step, Compound, Pos, Box, Cylinder,  #
 
 PI = 3.14159265
 
-# ---- physical estimates (edit as parts are weighed / motors chosen) ----
+# ---- physical params (MEASURED where noted; edit as parts are weighed) ----
 PLA      = 1.24e-6      # kg/mm^3 (PLA ~1.24 g/cc) -> section plastic mass
-MOTOR    = 0.28         # NEMA17 bare motor, kg (the micro mounts a NEMA17)
-CYCLO    = 0.04         # micro cyclo internals (discs/bearings/shaft), kg
+ACTUATOR = 0.188        # MEASURED full actuator (motor + cyclo), kg  <-- real
 PAYLOAD  = 0.25         # tool payload, kg
 SEG      = 150          # long-section length, mm (the one knob for reach)
 
@@ -50,16 +49,20 @@ def box_I(m, dx, dy, dz):
 
 def section_link(length_mm):
     """Build a long section solid and return (solid, mass, com_m, inertia).
-    Mass = section plastic (from geometry) + the DOWNSTREAM actuator (motor +
-    cyclo) that mounts on its base; COM is their weighted mean."""
+    Mass = the section's BLADE plastic (the printed structure, EXCLUDING the
+    housing + base -- those are part of the measured full actuator, so counting
+    the whole section here would double-count them) + one MEASURED full actuator
+    at the distal joint. (blade + housing/base + (ACTUATOR - housing/base) reduces
+    exactly to blade_plastic + ACTUATOR.)"""
     sec = A.long_section(length_mm)
-    m_pla = sec.volume * PLA
+    blade_vol = max(sec.volume - A._load("housing").volume
+                    - A._load("base_nema17").volume, 0.0)
+    m_blade = blade_vol * PLA
     c = sec.center(CenterOf.MASS)                           # mm
-    com_pla = (c.X/1000, c.Y/1000, c.Z/1000)
-    m_act = MOTOR + CYCLO
-    d = distal(length_mm)                                   # actuator sits here
-    mass = m_pla + m_act
-    com = tuple((m_pla*com_pla[i] + m_act*d[i]) / mass for i in range(3))
+    com_blade = (c.X/1000, c.Y/1000, c.Z/1000)
+    d = distal(length_mm)                                   # actuator at the distal joint
+    mass = m_blade + ACTUATOR
+    com = tuple((m_blade*com_blade[i] + ACTUATOR*d[i]) / mass for i in range(3))
     bb = sec.bounding_box().size
     I = box_I(mass, bb.X/1000, bb.Y/1000, bb.Z/1000)
     return sec, mass, com, I
@@ -79,7 +82,7 @@ CHAIN = [
          joint=dict(name="j1_yaw", axis=(0, 0, 1), origin=(0, 0, 0.065),
                     limit=(-PI, PI), effort=20, vel=3.0, damp=0.05),
          geom=("box", (0.05, 0.05, 0.05), (0, 0, 0.025)),
-         mass=0.30 + CYCLO, com=(0, 0, 0.025), I=box_I(0.34, 0.05, 0.05, 0.05)),
+         mass=ACTUATOR + 0.02, com=(0, 0, 0.025), I=box_I(0.21, 0.05, 0.05, 0.05)),
 
     dict(link="upper_arm_link", parent="mast_link",
          joint=dict(name="j2_shoulder", axis=(0, 1, 0), origin=(0, 0, 0.055),
@@ -97,7 +100,7 @@ CHAIN = [
          joint=dict(name="j4_wrist_pitch", axis=(0, 1, 0), origin=distal(SEG),
                     limit=(-1.92, 1.92), effort=6, vel=3.0, damp=0.03),
          geom=("box", (0.05, 0.042, 0.042), (0.025, 0, 0)),
-         mass=MOTOR + CYCLO, com=(0.025, 0, 0), I=box_I(0.32, 0.05, 0.042, 0.042)),
+         mass=ACTUATOR + 0.02, com=(0.025, 0, 0), I=box_I(0.21, 0.05, 0.042, 0.042)),
 
     dict(link="tool_link", parent="wrist_link",
          joint=dict(name="j5_tool_roll", axis=(1, 0, 0), origin=(0.05, 0, 0),
