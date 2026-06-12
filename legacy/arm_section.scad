@@ -1,4 +1,9 @@
 // ============================================================
+//  DEPRECATED (2026-06) — superseded by ../arm_section.py (build123d).
+//  OpenSCAD is no longer the toolchain; this is kept for reference only and
+//  is not maintained. The build123d port imports the vendor STEP as exact
+//  solids; this version imports the STL meshes.
+//
 //  arm_section.scad — the printable arm links for the cycloidal arm.
 //
 //  ARCHITECTURE (decided 2026-06): the arm is built from SECTIONS that each
@@ -48,8 +53,8 @@ WALL     = 4;            // collar/gusset wall
 $fn = 64;
 
 // ---------- vendor parts, recentered to origin (axis = +Z) ----------
-module v_housing() translate([-VC,0,0]) import("vendor/micro/housing.stl");
-module v_base()    translate([-VC,0,0]) import("vendor/micro/base_nema17.stl");
+module v_housing() translate([-VC,0,0]) import("../vendor/micro/housing.stl");
+module v_base()    translate([-VC,0,0]) import("../vendor/micro/base_nema17.stl");
 
 // Housing as a joint OUTPUT: cyclo axis along Y, centered on Y=0.
 // native (after recenter) z:0..HOUS_H about origin -> rotate so axis=Y, then

@@ -23,10 +23,10 @@ printer. Two design tracks live here:
 Active. **Current focus:** the integrated-actuator arm — the long arm section
 is modeled and prints as one fused solid; the two 90° end sections (base→slew,
 wrist→tool-roll) are next. No part is finalized for print yet.
-**In progress:** migrating the CAD from OpenSCAD to **[build123d](https://build123d.readthedocs.io)**
+**Toolchain:** the CAD is **[build123d](https://build123d.readthedocs.io)**
 (Python + OCC) — it imports the vendor STEP files as exact solids, a better fit
-for the fused-actuator parts than mesh import. `arm_section.py` is the ported
-long section (the `.scad` stays as the no-dependency reference).
+for the fused-actuator parts than mesh import. The old OpenSCAD `.scad` sources
+are **deprecated** and archived in [`legacy/`](legacy/README.md).
 
 ## Headline specs
 | | |
@@ -53,19 +53,17 @@ long section (the `.scad` stays as the no-dependency reference).
 
 ## Repo map
 **Build path (root)**
-- `arm_section.scad` — **the integrated-actuator links** (current direction).
-  Parametric; `PART=` selects `base` / `upper` / `forearm` / `wrist`. Fuses the
-  Sweep Dynamics micro-cyclo body + NEMA17 plate into one printable section.
-- `arm_section.py` — the **build123d** port of the above (exact STEP solids →
-  `out/`). Needs `pip install build123d` + `extract_vendor_steps.py` (pulls the
-  two parts out of your purchased assembly STEP). Generated STL/STEP land in `out/`.
-- `cycloid_joint.scad` — **the from-scratch joint.** Parametric cartridge;
-  `which=` selects J1/J2/J3, `part=` selects disc / ring / cam / flange / stator.
-- `arm_trunk.scad` — the 3-DOF from-scratch assembly (pose-able).
+- `arm_section.py` — **the integrated-actuator links** (build123d, current
+  direction). `python arm_section.py upper` fuses the Sweep micro-cyclo body +
+  NEMA17 plate (exact STEP solids) into one printable section → `out/`.
+- `extract_vendor_steps.py` — pulls the two parts out of your purchased
+  assembly STEP (run once before `arm_section.py`).
 - `vendor/` — the two Sweep Dynamics input parts + how to get the rest
   ([`vendor/README.md`](vendor/README.md)). Paid geometry — read [`NOTICE`](NOTICE).
 - `encoder_joint_spec.md` — integrated output-side encoder.
 - `DESIGN.md` — source of truth.
+- [`legacy/`](legacy/README.md) — **deprecated** OpenSCAD `.scad` sources
+  (`arm_section`, plus the from-scratch `cycloid_joint`/`arm_trunk` 3-DOF track).
 
 **Simulation & analysis** → [`sim/`](sim/README.md) — MuJoCo model + tools to
 pose it, size the motors (torque/reach/motor-catalog), budget backlash, watch it
@@ -76,21 +74,15 @@ foundation). Where the motor/reduction/backlash trade-offs were quantified.
 wrist mechanisms, harmonic ring, BLDC motor options + integrated actuator,
 and the now-merged joint-source files.
 
-## Viewing the CAD
-[OpenSCAD](https://openscad.org). Render a part to PNG:
+## Building the CAD
+[build123d](https://build123d.readthedocs.io) (`pip install build123d`):
 ```bash
-# an integrated-actuator arm section (current direction)
-openscad -o images/arm_section.png -D 'PART="upper"' arm_section.scad
-
-# the from-scratch 3-DOF trunk
-openscad -o images/arm_trunk.png --imgsize=850,1000 arm_trunk.scad
-
-# the J2 cycloid disc (the actual printable part)
-openscad -o images/disc.png -D 'which="J2"' -D 'part="disc"' cycloid_joint.scad
+python extract_vendor_steps.py          # once: pull the 2 parts from your STEP
+python arm_section.py upper             # -> out/upper.stl + out/upper.step
 ```
-> `arm_section.scad` imports `vendor/micro/*.stl`. The two tracked parts are
-> enough to render the link; the full actuator you supply from your Sweep
-> Dynamics purchase (see [`vendor/README.md`](vendor/README.md)).
+> Needs the **vendor geometry you purchase** from Sweep Dynamics (the assembly
+> STEP) — see [`vendor/README.md`](vendor/README.md) and [`NOTICE`](NOTICE).
+> Deprecated OpenSCAD versions render with `openscad` from [`legacy/`](legacy/README.md).
 
 ## Prototype plan
 1. **One joint (J2)** — print the disc, pin ring, cam, flange + BB race;

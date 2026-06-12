@@ -6,6 +6,12 @@ cartridge at three sizes. The earlier cable-driven / wrist / BLDC work is
 kept as **parked exploration** under `parked/` (see §"Parked explorations").
 This file is the source of truth; per-subsystem detail in `*_spec.md`.
 
+> **CAD toolchain (2026-06):** the build CAD is now **build123d** (`arm_section.py`);
+> the OpenSCAD `.scad` sources are deprecated to `legacy/`. The active build is the
+> **integrated-actuator arm** (Sweep micro-cyclo fused into printed sections) — see
+> the README. Much of §§1–13 below describes the from-scratch parametric-joint
+> track and predates that pivot; §0.5 has the current actuator findings.
+
 ---
 
 ## 0. BUILD TARGET (current scope)
