@@ -21,36 +21,33 @@ from build123d import (Box, Cylinder, Pos, Rot, Plane, Polygon, extrude,  # noqa
 
 # cyclo body (vendor housing): axis Z, r ~21, height 18.2, bore r17
 BR, BH, BORE = 21.0, 18.2, 17.0
-GAP   = 3.0                       # clearance from body OD to the NEMA plate
-# NEMA17 plate (the next motor's mount), face perpendicular to the body axis
-NS, NT = 47.0, 6.0               # plate size, thickness
-NBOLT, NHOLE, NBORE = 31.0, 3.4, 23.0
-GUS, GW = 22.0, 8.0              # gusset leg, gusset width
+GAP    = 3.0                      # clearance from body OD to the mounting plate
+BASE_T = 9.0                      # vendor base-plate thickness
+NS     = 42.0                     # vendor base footprint (NEMA17 square)
+GW     = 8.0                      # side-gusset width
 
 
 def part():
     body = A._load("housing")                       # axis Z, centered XY, z 0..18.2
     zc = BH / 2                                      # body mid-height
 
-    # NEMA plate at 90 deg: stood off in +X, face normal = X (next motor axis = X)
-    px = BR + GAP + NT / 2
-    plate = Pos(px, 0, zc) * Box(NT, NS, NS)
-    plate -= Pos(px, 0, zc) * Rot(0, 90, 0) * Cylinder(NBORE / 2, NT + 2)   # shaft bore
-    for sy in (1, -1):
-        for sz in (1, -1):
-            plate -= Pos(px, sy*NBOLT/2, zc + sz*NBOLT/2) * Rot(0, 90, 0) * Cylinder(NHOLE/2, NT+2)
+    # the REAL cyclo mounting plate (vendor base_nema17: NEMA17 bolt pattern +
+    # main bearing boss + bore), stood at 90 deg -- rotate its axis Z -> X and
+    # set it beside the body in +X. The next motor bolts to it.
+    base = Pos(BR + GAP, 0, zc) * Rot(0, 90, 0) * A._load("base_nema17")
 
-    # web tying the body OD to the plate, then keep the cyclo bore clear
-    web = Pos((BR + px) / 2, 0, zc) * Box(px - BR + 4, NS - 2*GW, BH)
+    # web tying the body OD to the plate
+    web = Pos(BR + GAP/2, 0, zc) * Box(GAP + 6, NS - 2*GW, BH)
 
     # side gussets (triangles in the X-Z plane at the Y edges)
     gy = NS / 2 - GW / 2
-    tri = Plane.XZ * Polygon((px, zc - NS/2), (px, zc + NS/2), (BR - 2, zc - NS/2),
+    xb = BR + GAP + BASE_T
+    tri = Plane.XZ * Polygon((xb, zc - NS/2), (xb, zc + NS/2), (BR - 2, zc - NS/2),
                              align=None)
     gus = (Pos(0, gy, 0) * extrude(tri, GW/2, both=True)
            + Pos(0, -gy, 0) * extrude(tri, GW/2, both=True))
 
-    out = body + web + plate + gus
+    out = body + web + base + gus
     out -= Pos(0, 0, zc) * Cylinder(BORE, BH + 4)   # reopen the disc cavity
     return out
 
