@@ -30,20 +30,23 @@ class Rerun(FileSystemEventHandler):
     def __init__(self, target, extra):
         self.target, self.extra, self.last = target, extra, 0.0
 
-    # catch every event type: editors save atomically (write temp + rename),
-    # so a save can arrive as on_created / on_moved, not just on_modified.
+    # React only to real CONTENT changes. Editors save atomically (write temp +
+    # rename), so a save can arrive as created/moved, not just modified -- catch
+    # all three. But do NOT react to 'opened'/'closed_no_write': merely RUNNING
+    # the part opens its .py to read it, and reacting to that re-runs forever.
+    WRITE_EVENTS = ("modified", "created", "moved")
+
     def on_any_event(self, event):
-        if event.is_directory:
+        if event.is_directory or event.event_type not in self.WRITE_EVENTS:
             return
         paths = [getattr(event, "src_path", ""), getattr(event, "dest_path", "")]
         names = [os.path.basename(p) for p in paths if p.endswith(".py")]
         if not names or all(n in ("watch.py", "preview.py") for n in names):
             return
-        now = time.time()
-        if now - self.last < DEBOUNCE:
+        if time.time() - self.last < DEBOUNCE:
             return
-        self.last = now
         run(self.target, self.extra)
+        self.last = time.time()        # measure debounce from run END (build is slow)
 
 
 def main():
