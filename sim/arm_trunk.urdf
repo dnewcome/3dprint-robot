@@ -57,13 +57,13 @@
   </joint>
 
   <link name="wrist_link">
-    <visual><origin xyz="0 0 0" rpy="1.570796325 0 0"/><geometry><mesh filename="wrist_bracket.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
-    <inertial><origin xyz="0.0200 -0.0200 0.0000"/><mass value="0.2550"/><inertia ixx="1.32e-04" iyy="1.32e-04" izz="1.56e-04" ixy="0" ixz="0" iyz="0"/></inertial>
+    <visual><origin xyz="0 0 0" rpy="1.570796325 0 0"/><geometry><mesh filename="angle_drive.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
+    <inertial><origin xyz="0.0200 -0.0060 0.0000"/><mass value="0.2180"/><inertia ixx="9.17e-05" iyy="9.17e-05" izz="9.17e-05" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
   <joint name="j5_tool_roll" type="revolute">
     <parent link="wrist_link"/><child link="tool_link"/>
-    <origin xyz="0.0500 0.0000 0.0000"/><axis xyz="1 0 0"/>
+    <origin xyz="0.0270 -0.0090 0.0000"/><axis xyz="1 0 0"/>
     <limit lower="-3.1416" upper="3.1416" effort="1.32" velocity="3.0"/>
     <dynamics damping="0.03"/>
   </joint>
