@@ -23,6 +23,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import arm_section as A                                              # noqa: E402
 import shoulder_bracket as SB                                        # noqa: E402
+import wrist_bracket as WB                                           # noqa: E402
 from build123d import (export_stl, export_step, Compound, Pos, Box, Cylinder,  # noqa: E402
                        CenterOf)
 
@@ -115,8 +116,9 @@ CHAIN = [
     dict(link="wrist_link", parent="forearm_link",
          joint=dict(name="j4_wrist_pitch", axis=(0, 1, 0), origin=distal(SEG),
                     limit=(-1.92, 1.92), effort=TORQUE_MICRO, vel=3.0, damp=0.03),
-         geom=("box", (0.05, 0.042, 0.042), (0.025, 0, 0)),
-         mass=ACTUATOR + 0.02, com=(0.025, 0, 0), I=box_I(0.21, 0.05, 0.042, 0.042)),
+         geom=("mesh", "wrist_bracket.stl", (0, 0, 0), (PI/2, 0, 0)),
+         mass=ACTUATOR + 0.067, com=(0.02, -0.02, 0),
+         I=box_I(0.26, 0.06, 0.06, 0.05)),
 
     dict(link="tool_link", parent="wrist_link",
          joint=dict(name="j5_tool_roll", axis=(1, 0, 0), origin=(0.05, 0, 0),
@@ -150,11 +152,18 @@ def _link_xml(e):
                '<visual><origin xyz="0.05 0 0" rpy="0 1.5708 0"/><geometry>'
                '<cylinder radius="0.006" length="0.06"/></geometry>'
                '<material name="tool"/></visual>')
+    elif e["geom"][0] == "mesh":
+        fn = e["geom"][1]
+        off = e["geom"][2] if len(e["geom"]) > 2 else (0, 0, 0)
+        rpy = e["geom"][3] if len(e["geom"]) > 3 else (0, 0, 0)
+        o = (f'<origin xyz="{off[0]} {off[1]} {off[2]}" '
+             f'rpy="{rpy[0]} {rpy[1]} {rpy[2]}"/>')
+        vis = (f'<visual>{o}<geometry><mesh filename="{fn}" '
+               f'scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>')
     else:
         g, off = _geom_xml(e["geom"])
-        mat = "link" if e["geom"][0] == "mesh" else "motor"
         o = f'<origin xyz="{off[0]} {off[1]} {off[2]}"/>' if off else ""
-        vis = f'<visual>{o}<geometry>{g}</geometry><material name="{mat}"/></visual>'
+        vis = f'<visual>{o}<geometry>{g}</geometry><material name="motor"/></visual>'
     return (f'  <link name="{name}">\n    {vis}\n'
             f'    <inertial><origin xyz="{cx:.4f} {cy:.4f} {cz:.4f}"/>'
             f'<mass value="{m:.4f}"/>'
@@ -225,7 +234,9 @@ def assembly_solid():
         pos[e["link"]] = xyz
         g = e["geom"]
         if g[0] == "mesh":
-            part = SB.bracket() if g[1] == "shoulder_bracket.stl" else A.long_section(e["section"])
+            part = {"shoulder_bracket.stl": SB.bracket,
+                    "wrist_bracket.stl": WB.bracket}.get(g[1])
+            part = part() if part else A.long_section(e["section"])
             solids.append(Pos(xyz[0]*1000, xyz[1]*1000, xyz[2]*1000) * part)   # mm frame
         elif g[0] == "box":
             s, off = g[1], g[2]
@@ -244,6 +255,7 @@ def main():
     # 1) section + bracket meshes
     export_stl(_sec, os.path.join(HERE, "sim", "meshes", "arm_long.stl"))
     export_stl(SB.bracket(), os.path.join(HERE, "sim", "meshes", "shoulder_bracket.stl"))
+    export_stl(WB.bracket(), os.path.join(HERE, "sim", "meshes", "wrist_bracket.stl"))
     # 2) the URDF (the generated robot model)
     with open(os.path.join(HERE, "sim", "arm_trunk.urdf"), "w") as f:
         f.write(build_urdf())
