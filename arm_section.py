@@ -19,11 +19,12 @@ tall in Z (gravity sag bends it about Y; stiffness ~ height^2).
 """
 import os, sys
 from build123d import (
-    import_step, export_stl, export_step, Box, Cylinder, Pos, Rot,
+    import_step, export_stl, export_step, Box, Cylinder, Pos, Rot, Solid,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MICRO = os.path.join(HERE, "vendor", "micro")
+_CACHE = os.path.join(HERE, "out", ".vendor_cache")   # healed BREPs (gitignored)
 
 # ---- micro actuator (20:1) + arm params ----
 ACT_R   = 21.0          # housing outer radius
@@ -47,12 +48,59 @@ ARM_FACE = -HOUS_H / 2          # the body's -Y face = the flat print plane
 ARM_YC   = ARM_FACE + ARM_T/2   # arm Y-center so its outer face is on that plane
 
 
+def _has_null_faces(shape):
+    """True if any face can't be triangulated -- e.g. analytic cone faces (the
+    NEMA17 countersinks) that OCC's mesher skips, leaving holes in OCP/STL."""
+    from OCP.BRepMesh import BRepMesh_IncrementalMesh
+    from OCP.BRep import BRep_Tool
+    from OCP.TopLoc import TopLoc_Location
+    from OCP.TopAbs import TopAbs_FACE
+    from OCP.TopExp import TopExp_Explorer
+    from OCP.TopoDS import TopoDS
+    BRepMesh_IncrementalMesh(shape, 0.1, False, 0.5, True)
+    exp = TopExp_Explorer(shape, TopAbs_FACE)
+    while exp.More():
+        if BRep_Tool.Triangulation_s(TopoDS.Face_s(exp.Current()),
+                                     TopLoc_Location()) is None:
+            return True
+        exp.Next()
+    return False
+
+
+def _read_brep(path):
+    from OCP.BRepTools import BRepTools
+    from OCP.BRep import BRep_Builder
+    from OCP.TopoDS import TopoDS_Shape, TopoDS
+    sh = TopoDS_Shape()
+    BRepTools.Read_s(sh, path, BRep_Builder())
+    return Solid(TopoDS.Solid_s(sh))
+
+
 def _load(name):
+    """Import a vendor STEP solid, healing un-meshable faces. Some vendor parts
+    (the NEMA17 base's countersink CONE faces) come in valid but un-triangulable,
+    so they vanish from the OCP viewer and the STL. Converting those to NURBS
+    fixes the mesher; the healed solid is cached as BREP so it's a one-time cost
+    (the watch-loop rebuilds read the cache, not re-heal)."""
     p = os.path.join(MICRO, f"{name}.step")
     if not os.path.exists(p):
         sys.exit(f"missing {p} — run extract_vendor_steps.py (needs your "
                  f"purchased Sweep Dynamics assembly STEP). See NOTICE.")
-    return import_step(p).solids()[0]
+    cache = os.path.join(_CACHE, f"{name}.brep")
+    if os.path.exists(cache) and os.path.getmtime(cache) >= os.path.getmtime(p):
+        return _read_brep(cache)
+
+    solid = import_step(p).solids()[0]
+    if _has_null_faces(solid.wrapped):
+        from OCP.BRepBuilderAPI import BRepBuilderAPI_NurbsConvert
+        from OCP.TopoDS import TopoDS
+        healed = BRepBuilderAPI_NurbsConvert(solid.wrapped, True).Shape()
+        solid = Solid(TopoDS.Solid_s(healed))
+
+    from OCP.BRepTools import BRepTools
+    os.makedirs(_CACHE, exist_ok=True)
+    BRepTools.Write_s(solid.wrapped, cache)
+    return solid
 
 
 def _axis_to_y(solid):
