@@ -121,7 +121,7 @@ CHAIN = [
          I=box_I(0.22, 0.05, 0.05, 0.05)),
 
     dict(link="tool_link", parent="wrist_link",
-         joint=dict(name="j5_tool_roll", axis=(1, 0, 0), origin=(0.027, -0.009, 0),
+         joint=dict(name="j5_tool_roll", axis=(1, 0, 0), origin=(0.0285, -0.0487, 0),
                     limit=(-PI, PI), effort=TORQUE_MICRO, vel=3.0, damp=0.03),
          geom=("tool",),
          mass=0.03 + PAYLOAD, com=(0.03, 0, 0), I=box_I(0.28, 0.06, 0.04, 0.04)),
