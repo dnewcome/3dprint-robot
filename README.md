@@ -68,6 +68,8 @@ are **deprecated** and archived in [`legacy/`](legacy/README.md).
 - `DESIGN.md` — source of truth.
 - [`CAD_NOTES.md`](CAD_NOTES.md) — build123d/OCP workflow + OCC gotchas
   (live preview, `make watch`, coincident-cut hangs, null-triangulation healing).
+- [`LAB_NOTEBOOK.md`](LAB_NOTEBOOK.md) — running log of process variables
+  (filament, color, print orientation, fits) + measured hardware anchors.
 - [`legacy/`](legacy/README.md) — **deprecated** OpenSCAD `.scad` sources
   (`arm_section`, plus the from-scratch `cycloid_joint`/`arm_trunk` 3-DOF track).
 
