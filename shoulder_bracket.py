@@ -22,8 +22,9 @@ GRID_N  = 4        # 4 x 4 bolt grid
 PITCH   = 14.0     # grid pitch -- ADJUST to your base cyclo / shoulder actuator
 HOLE_D  = 4.5      # bolt clearance (M4)
 SHAFT_D = 16.0     # center clearance bore on the shoulder face (cyclo shaft)
-GUSSET  = 26.0     # corner gusset leg length
-GW      = 40.0     # gusset width (along the joint axis)
+GUSSET   = 26.0    # corner gusset leg length
+GUSSET_W = 8.0     # each SIDE gusset's width (they sit at the edges, clear of
+                   # the central motor that mounts on the shoulder face)
 
 
 def _grid():
@@ -47,13 +48,16 @@ def bracket():
         for z in g:
             wall -= Pos(x, wy, T + H / 2 + z) * Rot(90, 0, 0) * Cylinder(HOLE_D / 2, T + 2)
 
-    # gusset filling the inner corner (triangle in the Y-Z plane, extruded along X)
+    # TWO side gussets at the X edges -- they brace the corner while leaving the
+    # center clear for the motor that bolts to the shoulder face.
     inner_y = -W / 2 + T
     tri = Plane.YZ * Polygon((inner_y, T), (inner_y + GUSSET, T), (inner_y, T + GUSSET),
                              align=None)
-    gusset = extrude(tri, GW / 2, both=True)
+    gx = W / 2 - GUSSET_W / 2
+    gussets = (Pos(gx, 0, 0) * extrude(tri, GUSSET_W / 2, both=True)
+               + Pos(-gx, 0, 0) * extrude(tri, GUSSET_W / 2, both=True))
 
-    return base + wall + gusset
+    return base + wall + gussets
 
 
 def main():
