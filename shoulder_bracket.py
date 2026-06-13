@@ -68,6 +68,8 @@ def main():
     print(f"shoulder_bracket: vol {b.volume:.0f} mm^3  bbox {b.bounding_box().size}")
     print(f"  base face: 4x4 grid @ {PITCH}mm pitch (slew mount)")
     print(f"  shoulder face: 4x4 grid + {SHAFT_D}mm bore (actuator mount), axis horizontal")
+    from preview import show       # live VSCode OCP viewer (no-op if not installed)
+    show(b)
 
 
 if __name__ == "__main__":

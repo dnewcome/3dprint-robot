@@ -270,6 +270,9 @@ def main():
     print(f"  sim/arm_trunk.urdf       ({len(CHAIN)} links, "
           f"reach ~{(2*SEG/1000 + 0.05 + TCP_FROM_TOOL[0]):.2f} m)")
     print(f"  {prev}")
+    if "--show" in sys.argv:                  # live VSCode OCP viewer of the full arm
+        from preview import show
+        show(assembly_solid())
 
 
 if __name__ == "__main__":

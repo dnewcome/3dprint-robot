@@ -57,6 +57,8 @@ def main():
     export_step(p, "out/angle_drive.step")
     print(f"angle_drive: vol {p.volume:.0f} mm^3  bbox {p.bounding_box().size}")
     print(f"  cyclo body axis Z; NEMA17 plate face normal X (next motor at 90 deg)")
+    from preview import show       # live VSCode OCP viewer (no-op if not installed)
+    show(p)
 
 
 if __name__ == "__main__":

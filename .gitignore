@@ -20,3 +20,6 @@ sim/meshes/
 __pycache__/
 *.pyc
 MUJOCO_LOG.TXT
+
+# editor (user-specific interpreter paths)
+.vscode/

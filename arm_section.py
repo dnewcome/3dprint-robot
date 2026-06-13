@@ -103,6 +103,8 @@ def main():
     print(f"{part}: volume={sec.volume:.0f} mm^3, "
           f"solids={len(sec.solids())} (want 1), bbox={sec.bounding_box().size}")
     print(f"  wrote {stl}\n  wrote {stp}")
+    from preview import show       # live VSCode OCP viewer (no-op if not installed)
+    show(sec)
 
 
 if __name__ == "__main__":

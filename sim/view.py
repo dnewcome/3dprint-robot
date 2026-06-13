@@ -45,7 +45,31 @@ def build_model():
         a.biasprm[1], a.biasprm[2] = -KP, -KV
         a.ctrllimited = mujoco.mjtLimited.mjLIMITED_TRUE
         a.ctrlrange[0], a.ctrlrange[1] = j.range[0], j.range[1]
-    return spec.compile()
+    add_scene(spec)
+    m = spec.compile()
+    m.vis.headlight.ambient[:] = [0.4, 0.4, 0.4]
+    m.vis.headlight.diffuse[:] = [0.45, 0.45, 0.45]
+    return m
+
+
+def add_scene(spec):
+    """A gradient sky, a ground plane, and a light -- so it's actually visible
+    (the bare model renders on black with only a dim headlight)."""
+    sky = spec.add_texture()
+    sky.name = "skybox"
+    sky.type = mujoco.mjtTexture.mjTEXTURE_SKYBOX
+    sky.builtin = mujoco.mjtBuiltin.mjBUILTIN_GRADIENT
+    sky.rgb1 = [0.45, 0.55, 0.66]; sky.rgb2 = [0.1, 0.12, 0.16]
+    sky.width = sky.height = 256
+    w = spec.worldbody
+    floor = w.add_geom()
+    floor.type = mujoco.mjtGeom.mjGEOM_PLANE
+    floor.size = [1.5, 1.5, 0.05]
+    floor.rgba = [0.27, 0.28, 0.32, 1]
+    floor.contype = floor.conaffinity = 0          # visual only (no collisions)
+    light = w.add_light()
+    light.pos = [0.5, 0.5, 1.4]; light.dir = [-0.4, -0.4, -1]
+    light.diffuse = [0.6, 0.6, 0.6]
 
 
 def main():
