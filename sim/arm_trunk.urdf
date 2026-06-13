@@ -21,13 +21,13 @@
   </joint>
 
   <link name="mast_link">
-    <visual><origin xyz="0 0 0.025"/><geometry><box size="0.05 0.05 0.05"/></geometry><material name="motor"/></visual>
-    <inertial><origin xyz="0.0000 0.0000 0.0250"/><mass value="0.3400"/><inertia ixx="1.42e-04" iyy="1.42e-04" izz="1.42e-04" ixy="0" ixz="0" iyz="0"/></inertial>
+    <visual><geometry><mesh filename="shoulder_bracket.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
+    <inertial><origin xyz="0.0000 -0.0150 0.0300"/><mass value="0.3830"/><inertia ixx="2.36e-04" iyy="2.36e-04" izz="2.28e-04" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
   <joint name="j2_shoulder" type="revolute">
     <parent link="mast_link"/><child link="upper_arm_link"/>
-    <origin xyz="0.0000 0.0000 0.0550"/><axis xyz="0 1 0"/>
+    <origin xyz="0.0000 -0.0270 0.0340"/><axis xyz="0 1 0"/>
     <limit lower="-1.9200" upper="1.9200" effort="3.0" velocity="3.0"/>
     <dynamics damping="0.05"/>
   </joint>

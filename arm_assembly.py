@@ -22,6 +22,7 @@ import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import arm_section as A                                              # noqa: E402
+import shoulder_bracket as SB                                        # noqa: E402
 from build123d import (export_stl, export_step, Compound, Pos, Box, Cylinder,  # noqa: E402
                        CenterOf)
 
@@ -95,11 +96,12 @@ CHAIN = [
     dict(link="mast_link", parent="base_link",
          joint=dict(name="j1_yaw", axis=(0, 0, 1), origin=(0, 0, 0.065),
                     limit=(-PI, PI), effort=TORQUE_SLEW, vel=3.0, damp=0.05),
-         geom=("box", (0.05, 0.05, 0.05), (0, 0, 0.025)),
-         mass=ACTUATOR_SHOULDER + 0.02, com=(0, 0, 0.025), I=box_I(0.34, 0.05, 0.05, 0.05)),
+         geom=("mesh", "shoulder_bracket.stl"),
+         mass=ACTUATOR_SHOULDER + 0.063, com=(0, -0.015, 0.030),
+         I=box_I(0.38, 0.06, 0.06, 0.062)),
 
     dict(link="upper_arm_link", parent="mast_link",
-         joint=dict(name="j2_shoulder", axis=(0, 1, 0), origin=(0, 0, 0.055),
+         joint=dict(name="j2_shoulder", axis=(0, 1, 0), origin=(0, -0.027, 0.034),
                     limit=(-1.92, 1.92), effort=TORQUE_SHOULDER, vel=3.0, damp=0.05),
          geom=("mesh", "arm_long.stl"), section=SEG,
          mass=_m, com=_c, I=_I),
@@ -223,7 +225,8 @@ def assembly_solid():
         pos[e["link"]] = xyz
         g = e["geom"]
         if g[0] == "mesh":
-            solids.append(Pos(*xyz) * A.long_section(e["section"]))   # mm frame
+            part = SB.bracket() if g[1] == "shoulder_bracket.stl" else A.long_section(e["section"])
+            solids.append(Pos(xyz[0]*1000, xyz[1]*1000, xyz[2]*1000) * part)   # mm frame
         elif g[0] == "box":
             s, off = g[1], g[2]
             solids.append(Pos((xyz[0]+off[0])*1000, (xyz[1]+off[1])*1000,
@@ -238,8 +241,9 @@ def assembly_solid():
 def main():
     os.makedirs(os.path.join(HERE, "sim", "meshes"), exist_ok=True)
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
-    # 1) section meshes
+    # 1) section + bracket meshes
     export_stl(_sec, os.path.join(HERE, "sim", "meshes", "arm_long.stl"))
+    export_stl(SB.bracket(), os.path.join(HERE, "sim", "meshes", "shoulder_bracket.stl"))
     # 2) the URDF (the generated robot model)
     with open(os.path.join(HERE, "sim", "arm_trunk.urdf"), "w") as f:
         f.write(build_urdf())
