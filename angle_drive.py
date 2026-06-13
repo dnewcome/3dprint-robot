@@ -24,31 +24,29 @@ BR, BH, BORE = 21.0, 18.2, 17.0
 GAP    = 3.0                      # clearance from body OD to the mounting plate
 BASE_T = 9.0                      # vendor base-plate thickness
 NS     = 42.0                     # vendor base footprint (NEMA17 square)
-GW     = 8.0                      # side-gusset width
+CAP    = 6.5                      # cyclo end-cap height on top of the housing
+CLEAR  = 3.0                      # gap the motor must keep above the cap
+# lift the plate in Z so a motor bolted to it (centered on the plate bore, NS
+# tall) clears the top of the drive: bore center = housing + cap + CLEAR + NS/2.
+PLATE_Z = BH + CAP + CLEAR + NS/2
 
 
 def part():
     body = A._load("housing")                       # axis Z, centered XY, z 0..18.2
-    zc = BH / 2                                      # body mid-height
 
     # the REAL cyclo mounting plate (vendor base_nema17: NEMA17 bolt pattern +
-    # main bearing boss + bore), stood at 90 deg -- rotate its axis Z -> X and
-    # set it beside the body in +X. The next motor bolts to it.
-    base = Pos(BR + GAP, 0, zc) * Rot(0, 90, 0) * A._load("base_nema17")
+    # main bearing boss + bore), at 90 deg (axis Z -> X), beside the body in +X
+    # and lifted to PLATE_Z so the motor clears the drive cap.
+    base = Pos(BR + GAP, 0, PLATE_Z) * Rot(0, 90, 0) * A._load("base_nema17")
 
-    # web tying the body OD to the plate
-    web = Pos(BR + GAP/2, 0, zc) * Box(GAP + 6, NS - 2*GW, BH)
+    # riser tying the body up to the underside of the plate (stays BELOW the
+    # motor; no gussets yet)
+    z1 = PLATE_Z - NS / 2                            # plate bottom (= cap + CLEAR)
+    rx0, rx1 = BR - 3, BR + GAP + BASE_T
+    riser = Pos((rx0 + rx1) / 2, 0, z1 / 2) * Box(rx1 - rx0, 30, z1)
 
-    # side gussets (triangles in the X-Z plane at the Y edges)
-    gy = NS / 2 - GW / 2
-    xb = BR + GAP + BASE_T
-    tri = Plane.XZ * Polygon((xb, zc - NS/2), (xb, zc + NS/2), (BR - 2, zc - NS/2),
-                             align=None)
-    gus = (Pos(0, gy, 0) * extrude(tri, GW/2, both=True)
-           + Pos(0, -gy, 0) * extrude(tri, GW/2, both=True))
-
-    out = body + web + base + gus
-    out -= Pos(0, 0, zc) * Cylinder(BORE, BH + 4)   # reopen the disc cavity
+    out = body + riser + base
+    out -= Pos(0, 0, BH / 2) * Cylinder(BORE, BH + 4)   # reopen the disc cavity
     return out
 
 
