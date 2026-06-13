@@ -21,13 +21,15 @@ import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import arm_section as A                                          # noqa: E402
-from build123d import (Box, Cylinder, Pos, Rot,                  # noqa: E402
+from build123d import (Box, Cylinder, Cone, Pos, Rot, Align,     # noqa: E402
                        export_stl, export_step)
 
 # ---- fasteners ----
 INSERT_D  = 4.6        # M3 heat-set insert hole (per the rest of the design)
 INSERT_DP = 5.0        # insert depth into the boss
 SCREW_CLR = 3.4        # M3 screw clearance (through the mount-plate tab)
+CSK_R     = 3.1        # M3 countersunk head radius (Ø6.2)
+CSK_DEPTH = CSK_R - SCREW_CLR / 2     # 90-deg countersink depth to the hole
 BOLT_SP   = 12.0       # spacing between the 2 fasteners (along Z)
 
 # ---- body ----
@@ -84,10 +86,19 @@ def mount_plate():
     tab = (Pos(FACE_X + TAB_T / 2, 0, (tab_lo + tab_hi) / 2)
            * Box(TAB_T, TAB_W, tab_hi - tab_lo))
     out = base + tab
-    # 2 clearance holes through the tab, HORIZONTAL (Y), aligned to the inserts
+    # 2 clearance holes through the tab, HORIZONTAL (Y), aligned to the inserts.
+    # COUNTERSUNK on the output face (FACE_X+FLANGE_T, the bearing-boss side):
+    # the screws thread into the boss from +X, so their heads land where the
+    # rotating arm sweeps -- countersink them flush.
     for s in (1, -1):
-        out -= (Pos(FACE_X + TAB_T / 2, s * BOLT_SP / 2, ZC)
-                * Rot(0, 90, 0) * Cylinder(SCREW_CLR / 2, TAB_T * 3))
+        y = s * BOLT_SP / 2
+        out -= Pos(FACE_X + TAB_T / 2, y, ZC) * Rot(0, 90, 0) * Cylinder(SCREW_CLR / 2, TAB_T * 3)
+        # countersink: cone narrow (hole Ø) at depth, widening out THROUGH the
+        # output face and 0.6mm proud, so it breaks the surface cleanly at full Ø.
+        ov = 0.6
+        out -= (Pos(FACE_X + FLANGE_T - CSK_DEPTH, y, ZC) * Rot(0, 90, 0)
+                * Cone(SCREW_CLR / 2, CSK_R + ov, CSK_DEPTH + ov,
+                       align=(Align.CENTER, Align.CENTER, Align.MIN)))
     return out
 
 
