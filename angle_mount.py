@@ -58,7 +58,10 @@ def body_boss():
 
 
 # ---- mount plate (piece 2) ----
-TAB_T  = 6.0           # tab thickness (X) -- the flange that seats on the boss
+FLANGE_T = 4.85        # vendor NEMA plate flat-flange thickness (= A.ARM_T); the
+                       # tab must match it EXACTLY -- the raised boss/output side
+                       # sweeps to the part edge, so nothing may sit proud of it
+TAB_T  = FLANGE_T      # tab thickness (X) = the flange, so it's a perfect extension
 TAB_W  = BOSS_W        # tab width (Y), matches the boss
 # the NEMA plate rides ABOVE the body so its central bore clears the boss; a
 # short tab drops from its lower edge down over the boss face to carry the bolts.
@@ -67,15 +70,15 @@ PLATE_ZC = BH + 21 + 3        # plate center (its bottom edge ~ body top + 3)
 
 def mount_plate():
     # NEMA17 base, face-normal +X (90 deg to the body's Z axis). The vendor plate
-    # has its bearing BOSS on one face -- orient so the boss faces OUTWARD (+X,
-    # away from the body) and the FLAT flange face seats inward (x=FACE_X) on the
-    # body boss, so the mating surface is completely flush. Lifted so its bore
-    # clears the body.
+    # has its bearing BOSS + rotating output on one face -- that whole face sweeps
+    # to the part edge, so NOTHING may sit proud of the plate surface on either X
+    # face. The tab must therefore be a PERFECT coplanar extension of the flange.
     base = Pos(FACE_X, 0, PLATE_ZC) * Rot(0, 90, 0) * A._load("base_nema17")
 
-    # flush flat tab: a coplanar extension of the inner mating face (its inner
-    # face on x=FACE_X, same plane as the flange) dropping down to the boss. Low
-    # in Z, so it clears the bearing boss (which sits high + outboard).
+    # tab spans EXACTLY the flange's two faces (x = FACE_X .. FACE_X+FLANGE_T):
+    # flush with the motor-mount face on one side and the output mounting surface
+    # on the other, nothing proud of the rotating-output face. The raised boss
+    # (FLANGE_T..full thickness) is left off the tab.
     tab_lo = ZC - BOLT_SP / 2 - 5
     tab_hi = PLATE_ZC - 21 + 3                     # overlap into the plate bottom
     tab = (Pos(FACE_X + TAB_T / 2, 0, (tab_lo + tab_hi) / 2)
