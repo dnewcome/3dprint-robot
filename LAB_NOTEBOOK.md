@@ -76,3 +76,18 @@ Convention: dates absolute (YYYY-MM-DD). Record the *observation* and the
   `FIT`. Orient with the tightest-tolerance feature (bore/boss) vertical.
 - CAD status: `angle_drive` geometry frozen for now (hull web + cap relief +
   web-only bore clear, committed `19f0802`). No `FIT` param added yet.
+
+### 2026-06-13 — flat printing nails the dimensions; Bambu edges out Elegoo
+- **Flat on the bed → dimensions are perfect.** Strong support for the
+  orientation hypothesis: when the part lies flat so the critical features print
+  in the favorable (vertical-axis / no-overhang) orientation, fits land on the
+  nominal CAD numbers — no offset needed.
+- **Bambu PLA prints a little better than Elegoo black** (surface/dimensional).
+  So part of the angle-part drift is material, but orientation is the dominant
+  lever — get the part flat and the Elegoo is usable too.
+- Takeaway for the angle part: prefer the **flat orientation** that puts its
+  tightest feature true; the residual material difference is small enough that a
+  per-material `FIT` may not even be needed if it's printed flat.
+- Implication for design: where a feature *must* print in a poor orientation
+  (the L-part's second face), that's where a `FIT`/clearance offset earns its
+  keep — not globally.
