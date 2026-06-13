@@ -66,6 +66,8 @@ are **deprecated** and archived in [`legacy/`](legacy/README.md).
   ([`vendor/README.md`](vendor/README.md)). Paid geometry — read [`NOTICE`](NOTICE).
 - `encoder_joint_spec.md` — integrated output-side encoder.
 - `DESIGN.md` — source of truth.
+- [`CAD_NOTES.md`](CAD_NOTES.md) — build123d/OCP workflow + OCC gotchas
+  (live preview, `make watch`, coincident-cut hangs, null-triangulation healing).
 - [`legacy/`](legacy/README.md) — **deprecated** OpenSCAD `.scad` sources
   (`arm_section`, plus the from-scratch `cycloid_joint`/`arm_trunk` 3-DOF track).
 
