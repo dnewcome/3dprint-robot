@@ -6,7 +6,10 @@ PY ?= python3
 VENDOR  := vendor/micro/housing.step vendor/micro/base_nema17.step
 MODEL   := sim/meshes/arm_long.stl          # representative output of arm_assembly.py
 
-.PHONY: help install vendor assembly sim gravity backlash plan sizing sweep parts clean
+.PHONY: help install vendor assembly sim watch gravity backlash plan sizing sweep parts clean
+
+# Which part the live viewer reloads (override: make watch PART=arm_section.py).
+PART ?= angle_drive.py
 .DEFAULT_GOAL := help
 
 help: ## list targets
@@ -29,6 +32,9 @@ assembly: $(MODEL) ## regenerate the robot model (URDF + meshes + CAD preview)
 
 sim: $(MODEL) ## interactive MuJoCo viewer — pose the joints with the keys
 	$(PY) sim/view.py
+
+watch: ## live OCP CAD Viewer: re-run PART on save (PART=angle_drive.py)
+	$(PY) watch.py $(PART)
 
 gravity: $(MODEL) ## dynamics: watch it hold / sag under gravity
 	$(PY) sim/gravity.py
