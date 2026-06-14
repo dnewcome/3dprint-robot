@@ -19,7 +19,7 @@ tall in Z (gravity sag bends it about Y; stiffness ~ height^2).
 """
 import os, sys
 from build123d import (
-    import_step, export_stl, export_step, Box, Cylinder, Pos, Rot, Solid,
+    import_step, export_stl, export_step, Box, Cylinder, Pos, Rot, Solid, Location,
 )
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -136,6 +136,32 @@ def long_section(length=SEG_LEN):
     saddle = Pos(0, ARM_YC, 0) * Rot(90, 0, 0) * (Cylinder(ACT_R + WALL, ARM_T) - Cylinder(CLEAR_R, ARM_T))
 
     return housing + saddle + arm + base
+
+
+# ---------------- mate frames ----------------
+# Every joint is the SAME drive mate: the base-plate BEARING BOSS seats into the
+# round BODY bore, sharing the cyclo axis. Two reusable frames in each vendor
+# part's NATIVE frame (Z = the cyclo / joint axis, pointing out of the part):
+BOSS_BASE = 4.85                       # base_nema17: flange top = base of the boss
+PLATE_MATE = Location((0, 0, BOSS_BASE))   # plate: centre bore, boss base
+BODY_MATE  = Location((0, 0, 0))           # body: axis centre, seating face
+
+
+def _axis_to_y_T(name):
+    """The Location transform _axis_to_y applies to `name` (Rot(90) + Y-centering),
+    so a mate frame can ride along with the part it sits on."""
+    s = Rot(90, 0, 0) * _load(name)
+    bb = s.bounding_box()
+    return Pos(0, -(bb.min.Y + bb.max.Y) / 2, 0) * Location((0, 0, 0), (90, 0, 0))
+
+
+def mate_frames(length=SEG_LEN):
+    """(PROX, DIST) for a section, as Locations in the section frame.
+    PROX = proximal housing body socket; DIST = distal base-plate boss."""
+    prox = _axis_to_y_T("housing") * BODY_MATE
+    dist = (Pos(length, ARM_FACE + BASE_H / 2, 0) * Location((0, 0, 0), (180, 0, 0))
+            * _axis_to_y_T("base_nema17")) * PLATE_MATE
+    return prox, dist
 
 
 def main():

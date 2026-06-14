@@ -102,6 +102,15 @@ def mount_plate():
     return out
 
 
+def mate_frames():
+    """(PROX, DIST) for the right-angle piece, as Locations in the part frame.
+    PROX = the body_boss (cyclo body) socket; DIST = the mount_plate boss -- on a
+    PERPENDICULAR axis, which is what makes this the 90deg connection."""
+    prox = A.BODY_MATE                                              # body_boss, axis Z
+    dist = (Pos(FACE_X, 0, PLATE_ZC) * Rot(0, 90, 0)) * A.PLATE_MATE  # plate boss, axis X
+    return prox, dist
+
+
 def main():
     os.makedirs("out", exist_ok=True)
     bb, mp = body_boss(), mount_plate()

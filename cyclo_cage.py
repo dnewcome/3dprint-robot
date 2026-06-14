@@ -72,6 +72,13 @@ def cage():
     return out
 
 
+def mate_frames():
+    """(PROX, DIST). cyclo_cage is the ROOT (no parent), so PROX is None; DIST is
+    the vendor cyclo plate boss on top (the slew output the rest of the arm mounts
+    to). The plate sits at the part's native frame (boss up)."""
+    return None, A.PLATE_MATE
+
+
 def main():
     os.makedirs("out", exist_ok=True)
     c = cage()
