@@ -122,12 +122,12 @@ CHAIN = [
     dict(link="wrist_link", parent="forearm_link",
          joint=dict(name="j4_wrist_pitch", axis=(0, 1, 0), origin=distal(FORE),
                     limit=(-1.92, 1.92), effort=TQ_24, vel=3.0, damp=0.03),
-         geom=("mesh", "angle_mount.stl", (0, 0, 0), (PI/2, 0, PI)),   # boss side faces the forearm
+         geom=("mesh", "angle_mount.stl", (0, 0, 0), (-PI/2, 0, 0)),   # body->forearm, output->+X (gripper)
          mass=ACT_24 + 0.03, com=(0.02, -0.006, 0),
          I=box_I(0.22, 0.05, 0.05, 0.05)),
 
     dict(link="tool_link", parent="wrist_link",
-         joint=dict(name="j5_tool_roll", axis=(1, 0, 0), origin=(0.0285, -0.0487, 0),
+         joint=dict(name="j5_tool_roll", axis=(1, 0, 0), origin=(0.038, 0.042, 0),
                     limit=(-PI, PI), effort=TQ_24, vel=3.0, damp=0.03),
          geom=("tool",),
          mass=0.03 + PAYLOAD, com=(0.03, 0, 0), I=box_I(0.28, 0.06, 0.04, 0.04)),
