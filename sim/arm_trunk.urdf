@@ -57,7 +57,7 @@
   </joint>
 
   <link name="wrist_link">
-    <visual><origin xyz="0 0 0" rpy="1.570796325 0 0"/><geometry><mesh filename="angle_mount.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
+    <visual><origin xyz="0 0 0" rpy="1.570796325 0 3.14159265"/><geometry><mesh filename="angle_mount.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
     <inertial><origin xyz="0.0200 -0.0060 0.0000"/><mass value="0.2180"/><inertia ixx="9.17e-05" iyy="9.17e-05" izz="9.17e-05" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
