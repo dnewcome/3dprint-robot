@@ -87,106 +87,109 @@ def section_link(length_mm, act_mass):
     return sec, mass, com, I
 
 
-# ---- mate-composed CHAIN: the assembly is built by MATING parts (every joint =
-#      base-plate boss seated into the next body), so joint frames are DERIVED
-#      from geometry, not typed. A per-joint CLOCK angle (about the joint axis)
-#      sets the rest pose -- here, the arm standing straight up.
-import numpy as np                                                  # noqa: E402
-from build123d import Location                                      # noqa: E402
+# ---- the CHAIN: the one definition. Each entry = a LINK + the JOINT that
+#      drives it (origin in the PARENT link frame). Geometry is a section or a
+#      primitive stand-in. Joint origins for section-driven joints are derived. -
+# upper arm carries the ELBOW motor (38mm) at its distal joint; the forearm (the
+# last pivot link) carries the WRIST-PITCH motor (24mm pancake).
+_up, _upm, _upc, _upI = section_link(UPPER, ACT_38)
+_fo, _fom, _foc, _foI = section_link(FORE,  ACT_24)
 
+CHAIN = [
+    dict(link="base_link", parent=None,
+         geom=("mesh", "cyclo_cage.stl", (0, 0, 0.038), (0, 0, 0)),   # slew drive, feet on ground
+         mass=0.5, com=(0, 0, 0.02), I=box_I(0.5, 0.07, 0.07, 0.047)),
 
-def angle_mount_solid():
-    """body_boss + mount_plate as one solid (the 90deg connection)."""
-    return Compound(children=[AM.body_boss(), AM.mount_plate()])
+    dict(link="mast_link", parent="base_link",
+         joint=dict(name="j1_yaw", axis=(0, 0, 1), origin=(0, 0, 0.047),
+                    limit=(-PI, PI), effort=TORQUE_SLEW, vel=3.0, damp=0.05),
+         geom=("mesh", "angle_mount.stl", (0, 0, 0), (0, 0, PI/2)),   # boss -> +Y (shoulder axis)
+         mass=ACT_48 + 0.063, com=(0, -0.015, 0.030),       # 48mm shoulder motor sits here
+         I=box_I(0.45, 0.06, 0.06, 0.062)),
 
+    dict(link="upper_arm_link", parent="mast_link",
+         joint=dict(name="j2_shoulder", axis=(0, 1, 0), origin=(0, 0.036, 0.042),
+                    limit=(-1.92, 1.92), effort=TQ_48, vel=3.0, damp=0.05),
+         geom=("mesh", "arm_upper.stl"), section=UPPER,
+         mass=_upm, com=_upc, I=_upI),
 
-def _loc_xyz_rpy(L):
-    """build123d Location -> (xyz in m, rpy in rad) for URDF."""
-    t = L.wrapped.Transformation()
-    R = np.array([[t.Value(i + 1, j + 1) for j in range(3)] for i in range(3)])
-    p = np.array([t.Value(i + 1, 4) for i in range(3)]) / 1000.0
-    return (tuple(p), (float(np.arctan2(R[2, 1], R[2, 2])),
-                       float(np.arctan2(-R[2, 0], np.hypot(R[0, 0], R[1, 0]))),
-                       float(np.arctan2(R[1, 0], R[0, 0]))))
+    dict(link="forearm_link", parent="upper_arm_link",
+         joint=dict(name="j3_elbow", axis=(0, 1, 0), origin=distal(UPPER),
+                    limit=(-2.62, 2.62), effort=TQ_38, vel=3.0, damp=0.05),
+         geom=("mesh", "arm_fore.stl"), section=FORE,
+         mass=_fom, com=_foc, I=_foI),
 
+    dict(link="wrist_link", parent="forearm_link",
+         joint=dict(name="j4_wrist_pitch", axis=(0, 1, 0), origin=distal(FORE),
+                    limit=(-1.92, 1.92), effort=TQ_24, vel=3.0, damp=0.03),
+         geom=("mesh", "angle_mount.stl", (0, 0, 0), (-PI/2, 0, 0)),   # body->forearm, output->+X (gripper)
+         mass=ACT_24 + 0.03, com=(0.02, -0.006, 0),
+         I=box_I(0.22, 0.05, 0.05, 0.05)),
 
-def _axis_of(L):
-    """the connector's Z (the joint rotation axis) as a unit tuple."""
-    z = (L * Location((0, 0, 1))).position - L.position
-    v = np.array([z.X, z.Y, z.Z]); v = v / np.linalg.norm(v)
-    return tuple(round(x, 4) for x in v)
-
-
-# chain spec: (link, parent, joint, solid_fn, mate_fn, clock_deg, limit, effort, mass)
-SPEC = [
-    ("base_link", None, None, CC.cage, CC.mate_frames, None, None, None, 0.5),
-    ("mast_link", "base_link", "j1_yaw", angle_mount_solid, AM.mate_frames,
-     0, (-PI, PI), TORQUE_SLEW, ACT_48 + 0.063),
-    ("upper_arm_link", "mast_link", "j2_shoulder", lambda: A.long_section(UPPER),
-     lambda: A.mate_frames(UPPER), 90, (-1.92, 1.92), TQ_48, section_link(UPPER, ACT_38)[1]),
-    ("forearm_link", "upper_arm_link", "j3_elbow", lambda: A.long_section(FORE),
-     lambda: A.mate_frames(FORE), 180, (-2.62, 2.62), TQ_38, section_link(FORE, ACT_24)[1]),
-    ("wrist_link", "forearm_link", "j4_wrist_pitch", angle_mount_solid, AM.mate_frames,
-     0, (-1.92, 1.92), TQ_24, ACT_24 + 0.03),
+    dict(link="tool_link", parent="wrist_link",
+         joint=dict(name="j5_tool_roll", axis=(1, 0, 0), origin=(0.038, 0.042, 0),
+                    limit=(-PI, PI), effort=TQ_24, vel=3.0, damp=0.03),
+         geom=("tool",),
+         mass=0.03 + PAYLOAD, com=(0.03, 0, 0), I=box_I(0.28, 0.06, 0.04, 0.04)),
 ]
-MESH = {"base_link": "cyclo_cage.stl", "mast_link": "angle_mount.stl",
-        "upper_arm_link": "arm_upper.stl", "forearm_link": "arm_fore.stl",
-        "wrist_link": "angle_mount.stl"}
-
-
-def compose():
-    """Walk the spec, mating each part to the previous -> per-link dicts with the
-    derived joint origin/axis (in the parent frame) and the world placement."""
-    out = []
-    for i, (link, parent, jn, bld, mfn, clk, lim, eff, mass) in enumerate(SPEC):
-        prox, dist = mfn()
-        if i == 0:
-            loc, origin, axis = Location(), None, None
-        else:
-            rel = out[i - 1]["dist"] * Location((0, 0, 0), (0, 0, clk)) * prox.inverse()
-            loc = out[i - 1]["loc"] * rel
-            origin, axis = _loc_xyz_rpy(rel), _axis_of(prox)
-        sol = bld()
-        c = sol.center(CenterOf.MASS); bb = sol.bounding_box().size
-        out.append(dict(link=link, parent=parent, jointname=jn, prox=prox, dist=dist,
-                        loc=loc, solidfn=bld, mesh=MESH[link], mass=mass,
-                        com=(c.X / 1000, c.Y / 1000, c.Z / 1000),
-                        I=box_I(mass, bb.X / 1000, bb.Y / 1000, bb.Z / 1000),
-                        origin=origin, axis=axis, limit=lim, effort=eff))
-    return out
-
-
-CHAIN = compose()
-# the gripper rides on the wrist's DIST (mount-plate boss) -> j5 tool-roll
-_wrist = CHAIN[-1]
-_tool_origin = _loc_xyz_rpy(_wrist["dist"])
-_tool_axis = _axis_of(_wrist["dist"])
 TCP_FROM_TOOL = (0.08, 0, 0)        # fixed TCP offset in tool frame
 
 
 # ---------------- URDF emission ----------------
+def _geom_xml(geom):
+    k = geom[0]
+    if k == "mesh":
+        return (f'<mesh filename="{geom[1]}" scale="0.001 0.001 0.001"/>', None)
+    if k == "cyl":
+        r, h, off = geom[1], geom[2], geom[3]
+        return (f'<cylinder radius="{r}" length="{h}"/>', off)
+    if k == "box":
+        s, off = geom[1], geom[2]
+        return (f'<box size="{s[0]} {s[1]} {s[2]}"/>', off)
+    return (None, None)            # "tool" handled specially
+
+
 def _link_xml(e):
-    """A mesh link, placed at IDENTITY in its own frame (the mate gives the joint)."""
-    cx, cy, cz = e["com"]; Ix, Iy, Iz = e["I"]
-    vis = (f'<visual><geometry><mesh filename="{e["mesh"]}" '
-           f'scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>')
-    return (f'  <link name="{e["link"]}">\n    {vis}\n'
+    name = e["link"]; m = e["mass"]; cx, cy, cz = e["com"]; Ix, Iy, Iz = e["I"]
+    if e["geom"][0] == "tool":
+        # a simple parallel-jaw gripper: roll plate + palm + two fingers (+X)
+        vis = ('<visual><origin xyz="0.006 0 0" rpy="0 1.5708 0"/><geometry>'
+               '<cylinder radius="0.018" length="0.006"/></geometry>'
+               '<material name="link"/></visual>\n    '
+               '<visual><origin xyz="0.022 0 0"/><geometry>'
+               '<box size="0.022 0.05 0.026"/></geometry><material name="link"/></visual>\n    '
+               '<visual><origin xyz="0.05 0.019 0"/><geometry>'
+               '<box size="0.05 0.008 0.024"/></geometry><material name="tool"/></visual>\n    '
+               '<visual><origin xyz="0.05 -0.019 0"/><geometry>'
+               '<box size="0.05 0.008 0.024"/></geometry><material name="tool"/></visual>')
+    elif e["geom"][0] == "mesh":
+        fn = e["geom"][1]
+        off = e["geom"][2] if len(e["geom"]) > 2 else (0, 0, 0)
+        rpy = e["geom"][3] if len(e["geom"]) > 3 else (0, 0, 0)
+        o = (f'<origin xyz="{off[0]} {off[1]} {off[2]}" '
+             f'rpy="{rpy[0]} {rpy[1]} {rpy[2]}"/>')
+        vis = (f'<visual>{o}<geometry><mesh filename="{fn}" '
+               f'scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>')
+    else:
+        g, off = _geom_xml(e["geom"])
+        o = f'<origin xyz="{off[0]} {off[1]} {off[2]}"/>' if off else ""
+        vis = f'<visual>{o}<geometry>{g}</geometry><material name="motor"/></visual>'
+    return (f'  <link name="{name}">\n    {vis}\n'
             f'    <inertial><origin xyz="{cx:.4f} {cy:.4f} {cz:.4f}"/>'
-            f'<mass value="{e["mass"]:.4f}"/>'
+            f'<mass value="{m:.4f}"/>'
             f'<inertia ixx="{Ix:.2e}" iyy="{Iy:.2e}" izz="{Iz:.2e}" '
             f'ixy="0" ixz="0" iyz="0"/></inertial>\n  </link>\n')
 
 
-def _joint_xml(name, parent, child, origin, axis, limit, effort, damp=0.05):
-    (xyz, rpy) = origin
-    return (f'  <joint name="{name}" type="revolute">\n'
-            f'    <parent link="{parent}"/><child link="{child}"/>\n'
-            f'    <origin xyz="{xyz[0]:.5f} {xyz[1]:.5f} {xyz[2]:.5f}" '
-            f'rpy="{rpy[0]:.5f} {rpy[1]:.5f} {rpy[2]:.5f}"/>'
-            f'<axis xyz="{axis[0]} {axis[1]} {axis[2]}"/>\n'
-            f'    <limit lower="{limit[0]:.4f}" upper="{limit[1]:.4f}" '
-            f'effort="{effort}" velocity="3.0"/>\n'
-            f'    <dynamics damping="{damp}"/>\n  </joint>\n')
+def _joint_xml(e):
+    j = e["joint"]; o = j["origin"]; a = j["axis"]
+    return (f'  <joint name="{j["name"]}" type="revolute">\n'
+            f'    <parent link="{e["parent"]}"/><child link="{e["link"]}"/>\n'
+            f'    <origin xyz="{o[0]:.4f} {o[1]:.4f} {o[2]:.4f}"/>'
+            f'<axis xyz="{a[0]} {a[1]} {a[2]}"/>\n'
+            f'    <limit lower="{j["limit"][0]:.4f}" upper="{j["limit"][1]:.4f}" '
+            f'effort="{j["effort"]}" velocity="{j["vel"]}"/>\n'
+            f'    <dynamics damping="{j["damp"]}"/>\n  </joint>\n')
 
 
 def _transmission_xml(name):
@@ -198,79 +201,87 @@ def _transmission_xml(name):
             f'</mechanicalReduction></actuator></transmission>\n')
 
 
-def _gripper_visuals():
-    return ('<visual><origin xyz="0.006 0 0" rpy="0 1.5708 0"/><geometry>'
-            '<cylinder radius="0.018" length="0.006"/></geometry><material name="link"/></visual>\n    '
-            '<visual><origin xyz="0.022 0 0"/><geometry><box size="0.022 0.05 0.026"/>'
-            '</geometry><material name="link"/></visual>\n    '
-            '<visual><origin xyz="0.05 0.019 0"/><geometry><box size="0.05 0.008 0.024"/>'
-            '</geometry><material name="tool"/></visual>\n    '
-            '<visual><origin xyz="0.05 -0.019 0"/><geometry><box size="0.05 0.008 0.024"/>'
-            '</geometry><material name="tool"/></visual>')
-
-
 def build_urdf():
     parts = ['<?xml version="1.0"?>',
-             '<!-- GENERATED by arm_assembly.py (mate-composed) - do not hand-edit. -->',
+             '<!-- GENERATED by arm_assembly.py - do not hand-edit. -->',
+             '<!-- 5-DOF micro-cyclo arm: every joint 20:1 Micro except the base',
+             '     slew. upper_arm + forearm links ARE the printed arm sections',
+             '     (meshes/arm_long.stl); base + wrist 90deg sections are stand-ins. -->',
              '<robot name="micro_arm">',
              '  <mujoco><compiler balanceinertia="true" discardvisual="false" '
              'fusestatic="false" meshdir="meshes"/></mujoco>',
+             '  <material name="motor"><color rgba="0.13 0.13 0.15 1"/></material>',
              '  <material name="link"> <color rgba="0.78 0.78 0.80 1"/></material>',
              '  <material name="tool"> <color rgba="0.27 0.51 0.71 1"/></material>']
     for e in CHAIN:
-        if e["jointname"]:
-            parts.append(_joint_xml(e["jointname"], e["parent"], e["link"],
-                                    e["origin"], e["axis"], e["limit"], e["effort"]))
+        if e.get("joint"):
+            parts.append(_joint_xml(e))
         parts.append(_link_xml(e))
-    # j5 tool-roll + the gripper, on the wrist's mount-plate boss
-    parts.append(_joint_xml("j5_tool_roll", "wrist_link", "tool_link",
-                            _tool_origin, _tool_axis, (-PI, PI), TQ_24, 0.03))
-    parts.append(f'  <link name="tool_link">\n    {_gripper_visuals()}\n'
-                 f'    <inertial><origin xyz="0.03 0 0"/><mass value="{0.03+PAYLOAD:.4f}"/>'
-                 f'<inertia ixx="2.0e-04" iyy="3.0e-04" izz="3.0e-04" ixy="0" ixz="0" iyz="0"/>'
-                 f'</inertial>\n  </link>\n')
-    parts.append('  <joint name="tcp_fixed" type="fixed"><parent link="tool_link"/>'
+    # TCP
+    parts.append(f'  <joint name="tcp_fixed" type="fixed"><parent link="tool_link"/>'
                  f'<child link="tcp_link"/><origin xyz="{TCP_FROM_TOOL[0]} '
                  f'{TCP_FROM_TOOL[1]} {TCP_FROM_TOOL[2]}"/></joint>')
     parts.append('  <link name="tcp_link"><inertial><mass value="0.001"/>'
                  '<inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>'
                  '</inertial></link>')
     for e in CHAIN:
-        if e["jointname"]:
-            parts.append(_transmission_xml(e["jointname"]))
-    parts.append(_transmission_xml("j5_tool_roll"))
+        if e.get("joint"):
+            parts.append(_transmission_xml(e["joint"]["name"]))
     parts.append('</robot>\n')
     return "\n".join(parts)
 
 
-# ---------------- CAD preview (the mated arm, straight-up rest pose) ----------------
+# ---------------- CAD preview (whole arm at q=0) ----------------
 def assembly_solid():
-    solids = [e["loc"] * e["solidfn"]() for e in CHAIN]
-    tool = CHAIN[-1]["loc"] * CHAIN[-1]["dist"]            # gripper at the wrist output
-    solids.append(tool * Pos(22, 0, 0) * Box(22, 50, 26))
-    for s in (1, -1):
-        solids.append(tool * Pos(50, s * 19, 0) * Box(50, 8, 24))
+    """Place each link's solid at its q=0 forward-kinematics pose (origins are
+    pure translations at q=0) into one Compound."""
+    pos = {None: (0, 0, 0)}
+    solids = []
+    for e in CHAIN:
+        p = pos[e["parent"]] if e["parent"] else (0, 0, 0)
+        o = e["joint"]["origin"] if e.get("joint") else (0, 0, 0)
+        xyz = tuple(p[i] + o[i] for i in range(3))
+        pos[e["link"]] = xyz
+        g = e["geom"]
+        if g[0] == "mesh":
+            part = {"cyclo_cage.stl": CC.cage,
+                    "angle_mount.stl": angle_mount_solid}.get(g[1])
+            part = part() if part else A.long_section(e["section"])  # arm_upper/arm_fore
+            solids.append(Pos(xyz[0]*1000, xyz[1]*1000, xyz[2]*1000) * part)   # mm frame
+        elif g[0] == "box":
+            s, off = g[1], g[2]
+            solids.append(Pos((xyz[0]+off[0])*1000, (xyz[1]+off[1])*1000,
+                              (xyz[2]+off[2])*1000) * Box(s[0]*1000, s[1]*1000, s[2]*1000))
+        elif g[0] == "cyl":
+            r, h, off = g[1], g[2], g[3]
+            solids.append(Pos((xyz[0]+off[0])*1000, (xyz[1]+off[1])*1000,
+                              (xyz[2]+off[2])*1000) * Cylinder(r*1000, h*1000))
     return Compound(children=solids)
 
 
 def main():
     os.makedirs(os.path.join(HERE, "sim", "meshes"), exist_ok=True)
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
-    export_stl(A.long_section(UPPER), os.path.join(HERE, "sim", "meshes", "arm_upper.stl"))
-    export_stl(A.long_section(FORE), os.path.join(HERE, "sim", "meshes", "arm_fore.stl"))
+    # 1) section + bracket meshes
+    export_stl(_up, os.path.join(HERE, "sim", "meshes", "arm_upper.stl"))
+    export_stl(_fo, os.path.join(HERE, "sim", "meshes", "arm_fore.stl"))
     export_stl(CC.cage(), os.path.join(HERE, "sim", "meshes", "cyclo_cage.stl"))
     export_stl(angle_mount_solid(), os.path.join(HERE, "sim", "meshes", "angle_mount.stl"))
+    # 2) the URDF (the generated robot model)
     with open(os.path.join(HERE, "sim", "arm_trunk.urdf"), "w") as f:
         f.write(build_urdf())
+    # 3) CAD assembly preview
     try:
         export_step(assembly_solid(), os.path.join(HERE, "out", "arm_assembly.step"))
         prev = "out/arm_assembly.step"
     except Exception as ex:                          # preview is non-essential
         prev = f"(skipped: {ex})"
-    print("regenerated (mate-composed, straight-up rest pose):")
-    print(f"  {len(CHAIN)} mesh links + gripper; arm {UPPER}+{FORE}mm sections")
+    print("regenerated:")
+    print(f"  arm_upper.stl {UPPER}mm ({_upm*1000:.0f} g) + arm_fore.stl {FORE}mm ({_fom*1000:.0f} g) incl. motors")
+    print(f"  sim/arm_trunk.urdf       ({len(CHAIN)} links, "
+          f"reach ~{((UPPER+FORE)/1000 + 0.05 + TCP_FROM_TOOL[0]):.2f} m)")
     print(f"  motor ladder: slew/elbow 38mm({TQ_38}N*m)  shoulder 48mm({TQ_48}N*m)  wrist 24mm({TQ_24}N*m)")
-    print(f"  sim/arm_trunk.urdf  +  {prev}")
+    print(f"  {prev}")
     if "--show" in sys.argv:                  # live VSCode OCP viewer of the full arm
         from preview import show
         show(assembly_solid())
