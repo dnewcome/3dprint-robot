@@ -9,8 +9,8 @@
   <material name="link"> <color rgba="0.78 0.78 0.80 1"/></material>
   <material name="tool"> <color rgba="0.27 0.51 0.71 1"/></material>
   <link name="base_link">
-    <visual><origin xyz="0 0 0.03"/><geometry><cylinder radius="0.045" length="0.06"/></geometry><material name="motor"/></visual>
-    <inertial><origin xyz="0.0000 0.0000 0.0300"/><mass value="1.0000"/><inertia ixx="9.75e-04" iyy="9.75e-04" izz="1.35e-03" ixy="0" ixz="0" iyz="0"/></inertial>
+    <visual><origin xyz="0 0 0.038" rpy="0 0 0"/><geometry><mesh filename="cyclo_cage.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
+    <inertial><origin xyz="0.0000 0.0000 0.0200"/><mass value="0.5000"/><inertia ixx="2.96e-04" iyy="2.96e-04" izz="4.08e-04" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
   <joint name="j1_yaw" type="revolute">
@@ -57,7 +57,7 @@
   </joint>
 
   <link name="wrist_link">
-    <visual><origin xyz="0 0 0" rpy="1.570796325 0 0"/><geometry><mesh filename="angle_drive.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
+    <visual><origin xyz="0 0 0" rpy="1.570796325 0 0"/><geometry><mesh filename="angle_wrist.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
     <inertial><origin xyz="0.0200 -0.0060 0.0000"/><mass value="0.2180"/><inertia ixx="9.17e-05" iyy="9.17e-05" izz="9.17e-05" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 

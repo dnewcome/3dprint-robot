@@ -23,9 +23,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import arm_section as A                                              # noqa: E402
 import shoulder_bracket as SB                                        # noqa: E402
-import angle_drive as AD                                             # noqa: E402
+import angle_mount as AM                                             # noqa: E402
+import cyclo_cage as CC                                              # noqa: E402
 from build123d import (export_stl, export_step, Compound, Pos, Box, Cylinder,  # noqa: E402
                        CenterOf)
+
+
+def wrist_assembly():
+    """The right-angle wrist as one solid: body_boss (cyclo body, the wrist-pitch
+    output) + mount_plate bolted to it -- both move together about J4."""
+    return Compound(children=[AM.body_boss(), AM.mount_plate()])
 
 PI = 3.14159265
 
@@ -90,8 +97,8 @@ _fo, _fom, _foc, _foI = section_link(FORE,  ACT_24)
 
 CHAIN = [
     dict(link="base_link", parent=None,
-         geom=("cyl", 0.045, 0.06, (0, 0, 0.03)),
-         mass=1.0, com=(0, 0, 0.03), I=box_I(1.0, 0.09, 0.09, 0.06)),
+         geom=("mesh", "cyclo_cage.stl", (0, 0, 0.038), (0, 0, 0)),   # feet on ground
+         mass=0.5, com=(0, 0, 0.02), I=box_I(0.5, 0.07, 0.07, 0.047)),
 
     dict(link="mast_link", parent="base_link",
          joint=dict(name="j1_yaw", axis=(0, 0, 1), origin=(0, 0, 0.065),
@@ -115,7 +122,7 @@ CHAIN = [
     dict(link="wrist_link", parent="forearm_link",
          joint=dict(name="j4_wrist_pitch", axis=(0, 1, 0), origin=distal(FORE),
                     limit=(-1.92, 1.92), effort=TQ_24, vel=3.0, damp=0.03),
-         geom=("mesh", "angle_drive.stl", (0, 0, 0), (PI/2, 0, 0)),
+         geom=("mesh", "angle_wrist.stl", (0, 0, 0), (PI/2, 0, 0)),
          mass=ACT_24 + 0.03, com=(0.02, -0.006, 0),
          I=box_I(0.22, 0.05, 0.05, 0.05)),
 
@@ -234,7 +241,8 @@ def assembly_solid():
         g = e["geom"]
         if g[0] == "mesh":
             part = {"shoulder_bracket.stl": SB.bracket,
-                    "angle_drive.stl": AD.part}.get(g[1])
+                    "cyclo_cage.stl": CC.cage,
+                    "angle_wrist.stl": wrist_assembly}.get(g[1])
             part = part() if part else A.long_section(e["section"])  # arm_upper/arm_fore
             solids.append(Pos(xyz[0]*1000, xyz[1]*1000, xyz[2]*1000) * part)   # mm frame
         elif g[0] == "box":
@@ -255,7 +263,8 @@ def main():
     export_stl(_up, os.path.join(HERE, "sim", "meshes", "arm_upper.stl"))
     export_stl(_fo, os.path.join(HERE, "sim", "meshes", "arm_fore.stl"))
     export_stl(SB.bracket(), os.path.join(HERE, "sim", "meshes", "shoulder_bracket.stl"))
-    export_stl(AD.part(), os.path.join(HERE, "sim", "meshes", "angle_drive.stl"))
+    export_stl(CC.cage(), os.path.join(HERE, "sim", "meshes", "cyclo_cage.stl"))
+    export_stl(wrist_assembly(), os.path.join(HERE, "sim", "meshes", "angle_wrist.stl"))
     # 2) the URDF (the generated robot model)
     with open(os.path.join(HERE, "sim", "arm_trunk.urdf"), "w") as f:
         f.write(build_urdf())
