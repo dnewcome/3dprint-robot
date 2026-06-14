@@ -142,9 +142,9 @@ def long_section(length=SEG_LEN):
 # Every joint is the SAME drive mate: the base-plate BEARING BOSS seats into the
 # round BODY bore, sharing the cyclo axis. Two reusable frames in each vendor
 # part's NATIVE frame (Z = the cyclo / joint axis, pointing out of the part):
-BOSS_BASE = 4.85                       # base_nema17: flange top = base of the boss
-PLATE_MATE = Location((0, 0, BOSS_BASE))   # plate: centre bore, boss base
-BODY_MATE  = Location((0, 0, 0))           # body: axis centre, seating face
+BOSS_BASE = 6.0                        # base_nema17: flange face the body rests on (boss rises above)
+PLATE_MATE = Location((0, 0, BOSS_BASE))   # plate: centre bore, boss-base face
+BODY_MATE  = Location((0, 0, 0), (180, 0, 0))   # body: open face, Z pointing OUT (receives the boss)
 
 
 def _axis_to_y_T(name):
