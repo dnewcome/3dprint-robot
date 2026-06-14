@@ -30,10 +30,10 @@ MCLR     = 0.6        # clearance around the motor envelope
 LEG      = 9.0        # leg square side
 LEGC     = 21.5       # leg centre offset (X=Y): face overlaps the corner flange
 # diagonal feet (same 45deg) hanging off the leg bottoms
-FOOT_L   = 18.0       # foot length (radial), FOOT_W width, on the diagonal
-FOOT_W   = 14.0
-FOOTC    = 30.0       # foot centre offset (X=Y), outboard of the leg
-HOLEC    = 33.0       # foot bolt-hole offset (X=Y), outboard of the leg
+FOOT_L   = 14.0       # foot length (radial), FOOT_W width, on the diagonal
+FOOT_W   = 13.0
+FOOTC    = 25.5       # foot centre offset (X=Y), just outboard of the leg
+HOLEC    = 28.0       # foot bolt-hole offset (X=Y), just clear of the leg
 
 
 def _motor_envelope():
