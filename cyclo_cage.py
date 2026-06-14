@@ -16,18 +16,21 @@ Needs the vendor STEP (extract_vendor_steps.py). See NOTICE.
 import os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import math                                                      # noqa: E402
 import arm_section as A                                          # _load(vendor)  # noqa: E402
 import motor_cage as MC                                          # leg/foot specs # noqa: E402
-from build123d import Box, Cylinder, Pos, export_stl, export_step  # noqa: E402
+from build123d import Box, Cylinder, Pos, Rot, export_stl, export_step  # noqa: E402
 
 MLEN     = 38.0       # motor length (legs span this)
 FLANGE_T = 4.85       # vendor plate FLAT flange thickness (the boss rises above it)
-LEGR     = 26.0       # leg centre: outboard of the motor's flat face (42 sq)
-EAR_IN   = 18.0       # ear reaches IN to this radius (clean flange, clear of bolts)
-EAR_W    = 16.0       # ear width (clears the NEMA bolt holes at +/-15.5)
-# legs sit at the MID-SIDES (not corners) so the ears land on clear flange between
-# the motor and the bolt circle, and the diagonal NEMA bolt holes stay accessible.
-SIDES = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+# legs at the CORNERS (the motor's wire connector lives on an edge face, so the
+# mid-sides are blocked). Corner = the flange chamfer gap (clears the 42mm motor).
+LEGR     = 24.0       # leg centre offset (X=Y): in the corner chamfer gap
+EAR_LEN  = 11.0       # diagonal ear length (radial): grabs the corner flange sliver
+EAR_W    = 18.0       # diagonal ear width (tangential, along the chamfer)
+EAR_R    = 22.0       # diagonal ear centre offset (X=Y)
+FOOTR    = 28.0       # foot pad centre (X=Y), outboard of the leg
+HOLER    = 32.0       # foot bolt-hole centre (X=Y): OUTBOARD of the leg, clear
 
 
 def cage():
@@ -37,20 +40,20 @@ def cage():
     # FLUSH and the rotating output (the boss above FLANGE_T) is left clear.
     out = A._load("base_nema17")
     leg_h = FLANGE_T + MLEN
-    for dx, dy in SIDES:
-        leg = Pos(dx * LEGR, dy * LEGR, (FLANGE_T - MLEN) / 2) * Box(MC.LEG, MC.LEG, leg_h)
-        # ear: radial bridge from the flange edge out to the leg, FLUSH with the
-        # flange top (z 0..FLANGE_T). Lands at the mid-side, clear of the bolts.
-        out_r = LEGR + MC.LEG / 2
-        span = out_r - EAR_IN
-        if dx:
-            ear = Pos(dx * (EAR_IN + out_r) / 2, 0, FLANGE_T / 2) * Box(span, EAR_W, FLANGE_T)
-        else:
-            ear = Pos(0, dy * (EAR_IN + out_r) / 2, FLANGE_T / 2) * Box(EAR_W, span, FLANGE_T)
-        # foot on the base plate, outboard, with a vertical bolt hole
-        foot = Pos(dx * MC.FOOTR, dy * MC.FOOTR, -MLEN + MC.FOOT_T / 2) * Box(MC.FOOT_W, MC.FOOT_W, MC.FOOT_T)
-        foot -= Pos(dx * MC.HOLER, dy * MC.HOLER, -MLEN + MC.FOOT_T / 2) * Cylinder(MC.FBOLT / 2, MC.FOOT_T + 2)
+    holes = []
+    for sx, sy in MC.CORNERS:
+        leg = Pos(sx * LEGR, sy * LEGR, (FLANGE_T - MLEN) / 2) * Box(MC.LEG, MC.LEG, leg_h)
+        # diagonal ear: a 45-deg gusset along the chamfer, grabbing only the corner
+        # flange sliver OUTBOARD of the bolt heads, flush with the flange top.
+        ang = math.degrees(math.atan2(sy, sx))
+        ear = (Pos(sx * EAR_R, sy * EAR_R, FLANGE_T / 2)
+               * Rot(0, 0, ang) * Box(EAR_LEN, EAR_W, FLANGE_T))
+        # foot on the base plate, outboard, hole cut from the FINAL solid (below)
+        foot = Pos(sx * FOOTR, sy * FOOTR, -MLEN + MC.FOOT_T / 2) * Box(MC.FOOT_W, MC.FOOT_W, MC.FOOT_T)
         out += leg + ear + foot
+        holes.append((sx * HOLER, sy * HOLER))
+    for hx, hy in holes:        # cut AFTER union so nothing plugs them
+        out -= Pos(hx, hy, -MLEN + MC.FOOT_T / 2) * Cylinder(MC.FBOLT / 2, MC.FOOT_T + 2)
     return out
 
 

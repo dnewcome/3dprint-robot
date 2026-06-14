@@ -20,7 +20,7 @@ import arm_section as A                                          # noqa: E402
 import angle_mount as AM                                         # fastener specs # noqa: E402
 from build123d import Box, Cylinder, Pos, Rot, export_stl, export_step  # noqa: E402
 
-SEG     = 46.0        # joint-to-joint: housing axis -> end attach face
+SEG     = 52.0        # joint-to-joint: housing axis -> end attach face
 END_LEN = 12.0        # X length of the thickened end boss (insert depth + wall)
 END_T   = 10.0        # Y thickness of the end boss (> ARM_T; houses the inserts)
 
