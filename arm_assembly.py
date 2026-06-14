@@ -103,12 +103,12 @@ CHAIN = [
     dict(link="mast_link", parent="base_link",
          joint=dict(name="j1_yaw", axis=(0, 0, 1), origin=(0, 0, 0.047),
                     limit=(-PI, PI), effort=TORQUE_SLEW, vel=3.0, damp=0.05),
-         geom=("mesh", "angle_mount.stl", (0, 0, 0), (0, 0, 0)),   # right-angle piece (= wrist, bolted the other way)
+         geom=("mesh", "angle_mount.stl", (0, 0, 0), (0, 0, PI/2)),   # boss -> +Y (shoulder axis)
          mass=ACT_48 + 0.063, com=(0, -0.015, 0.030),       # 48mm shoulder motor sits here
          I=box_I(0.45, 0.06, 0.06, 0.062)),
 
     dict(link="upper_arm_link", parent="mast_link",
-         joint=dict(name="j2_shoulder", axis=(0, 1, 0), origin=(0, -0.027, 0.034),
+         joint=dict(name="j2_shoulder", axis=(0, 1, 0), origin=(0, 0.036, 0.042),
                     limit=(-1.92, 1.92), effort=TQ_48, vel=3.0, damp=0.05),
          geom=("mesh", "arm_upper.stl"), section=UPPER,
          mass=_upm, com=_upc, I=_upI),

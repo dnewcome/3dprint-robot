@@ -21,13 +21,13 @@
   </joint>
 
   <link name="mast_link">
-    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><mesh filename="angle_mount.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 1.570796325"/><geometry><mesh filename="angle_mount.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
     <inertial><origin xyz="0.0000 -0.0150 0.0300"/><mass value="0.4530"/><inertia ixx="2.79e-04" iyy="2.79e-04" izz="2.70e-04" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
   <joint name="j2_shoulder" type="revolute">
     <parent link="mast_link"/><child link="upper_arm_link"/>
-    <origin xyz="0.0000 -0.0270 0.0340"/><axis xyz="0 1 0"/>
+    <origin xyz="0.0000 0.0360 0.0420"/><axis xyz="0 1 0"/>
     <limit lower="-1.9200" upper="1.9200" effort="5.5" velocity="3.0"/>
     <dynamics damping="0.05"/>
   </joint>
