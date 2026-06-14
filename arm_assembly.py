@@ -31,23 +31,20 @@ PI = 3.14159265
 
 # ---- physical params (MEASURED where noted; edit as parts are weighed) ----
 PLA      = 1.24e-6      # kg/mm^3 (PLA ~1.24 g/cc) -> section plastic mass
-ACTUATOR = 0.188        # MEASURED full actuator (TINY PANCAKE stepper + cyclo), kg
 PAYLOAD  = 0.25         # tool payload, kg
-SEG      = 75           # MEASURED prototype section length, mm (joint-to-joint)
-# MEASURED limit: 1.8 kg on a scale at 75mm = 1.32 N*m output, where the
-# OPEN-LOOP STEPPER starts MISSING STEPS (the printed cyclo does NOT slip). So
-# this is the current motor-drive limit, not a mechanical cap -- tunable up with
-# more phase current / a stiffer driver / closed-loop, toward the motor's real
-# torque. Governs reach/payload at the CURRENT drive settings.
-TORQUE_MICRO = 1.32     # output torque at motor step-loss, N*m  <-- MEASURED
-TORQUE_SLEW  = 3.0      # base slew (bigger drive, not yet measured), N*m
-# J2 (shoulder) sits at the BASE -> a bigger/heavier motor there costs nothing
-# downstream (its weight loads only the slew). Put a full NEMA17 there for torque
-# headroom; keep the tiny pancake at J3-J5 where weight hangs off the arm.
-ACTUATOR_SHOULDER = 0.32   # NEMA17 + micro cyclo, kg (on the base side of J2)
-TORQUE_SHOULDER   = 3.0    # NEMA17 @20:1 driven hard, N*m. NOTE: the micro cyclo
-                           # is only confirmed to 1.32 N*m -- verify it transmits
-                           # this much before relying on it.
+UPPER    = 75           # upper-arm section length, mm (shoulder J2 -> elbow J3)
+FORE     = 52           # forearm / last pivot link (pivot_link.py), elbow -> wrist
+#
+# MOTOR LADDER (the build's NEMA17 plan: slew 38 / shoulder 48 / elbow 38 / wrist 24).
+# Output torque is anchored to the MEASURED 24mm-pancake limit (1.8 kg @ 75mm =
+# 1.32 N*m, where the OPEN-LOOP stepper starts MISSING STEPS -- the printed cyclo
+# does NOT slip), then scaled by motor holding torque (~ stack length). These are
+# the CURRENT step-loss caps; tunable up with more current / closed-loop.
+#                  full actuator (stepper+cyclo), kg     output torque, N*m
+ACT_24, TQ_24 = 0.188, 1.32      # 24mm pancake  -- MEASURED actuator + torque
+ACT_38, TQ_38 = 0.29,  3.6       # 38mm
+ACT_48, TQ_48 = 0.39,  5.5       # 48mm
+TORQUE_SLEW   = TQ_38            # base slew driven by the 38mm (vertical axis: easy)
 
 
 def distal(length_mm):
@@ -63,13 +60,12 @@ def box_I(m, dx, dy, dz):
             m * (dx*dx + dy*dy) / 12)
 
 
-def section_link(length_mm):
+def section_link(length_mm, act_mass):
     """Build a long section solid and return (solid, mass, com_m, inertia).
     Mass = the section's BLADE plastic (the printed structure, EXCLUDING the
     housing + base -- those are part of the measured full actuator, so counting
-    the whole section here would double-count them) + one MEASURED full actuator
-    at the distal joint. (blade + housing/base + (ACTUATOR - housing/base) reduces
-    exactly to blade_plastic + ACTUATOR.)"""
+    the whole section here would double-count them) + the DISTAL actuator (the
+    next joint's motor, whose size depends on where this section sits)."""
     sec = A.long_section(length_mm)
     blade_vol = max(sec.volume - A._load("housing").volume
                     - A._load("base_nema17").volume, 0.0)
@@ -77,8 +73,8 @@ def section_link(length_mm):
     c = sec.center(CenterOf.MASS)                           # mm
     com_blade = (c.X/1000, c.Y/1000, c.Z/1000)
     d = distal(length_mm)                                   # actuator at the distal joint
-    mass = m_blade + ACTUATOR
-    com = tuple((m_blade*com_blade[i] + ACTUATOR*d[i]) / mass for i in range(3))
+    mass = m_blade + act_mass
+    com = tuple((m_blade*com_blade[i] + act_mass*d[i]) / mass for i in range(3))
     bb = sec.bounding_box().size
     I = box_I(mass, bb.X/1000, bb.Y/1000, bb.Z/1000)
     return sec, mass, com, I
@@ -87,7 +83,10 @@ def section_link(length_mm):
 # ---- the CHAIN: the one definition. Each entry = a LINK + the JOINT that
 #      drives it (origin in the PARENT link frame). Geometry is a section or a
 #      primitive stand-in. Joint origins for section-driven joints are derived. -
-_sec, _m, _c, _I = section_link(SEG)
+# upper arm carries the ELBOW motor (38mm) at its distal joint; the forearm (the
+# last pivot link) carries the WRIST-PITCH motor (24mm pancake).
+_up, _upm, _upc, _upI = section_link(UPPER, ACT_38)
+_fo, _fom, _foc, _foI = section_link(FORE,  ACT_24)
 
 CHAIN = [
     dict(link="base_link", parent=None,
@@ -98,31 +97,31 @@ CHAIN = [
          joint=dict(name="j1_yaw", axis=(0, 0, 1), origin=(0, 0, 0.065),
                     limit=(-PI, PI), effort=TORQUE_SLEW, vel=3.0, damp=0.05),
          geom=("mesh", "shoulder_bracket.stl"),
-         mass=ACTUATOR_SHOULDER + 0.063, com=(0, -0.015, 0.030),
-         I=box_I(0.38, 0.06, 0.06, 0.062)),
+         mass=ACT_48 + 0.063, com=(0, -0.015, 0.030),       # 48mm shoulder motor sits here
+         I=box_I(0.45, 0.06, 0.06, 0.062)),
 
     dict(link="upper_arm_link", parent="mast_link",
          joint=dict(name="j2_shoulder", axis=(0, 1, 0), origin=(0, -0.027, 0.034),
-                    limit=(-1.92, 1.92), effort=TORQUE_SHOULDER, vel=3.0, damp=0.05),
-         geom=("mesh", "arm_long.stl"), section=SEG,
-         mass=_m, com=_c, I=_I),
+                    limit=(-1.92, 1.92), effort=TQ_48, vel=3.0, damp=0.05),
+         geom=("mesh", "arm_upper.stl"), section=UPPER,
+         mass=_upm, com=_upc, I=_upI),
 
     dict(link="forearm_link", parent="upper_arm_link",
-         joint=dict(name="j3_elbow", axis=(0, 1, 0), origin=distal(SEG),
-                    limit=(-2.62, 2.62), effort=TORQUE_MICRO, vel=3.0, damp=0.05),
-         geom=("mesh", "arm_long.stl"), section=SEG,
-         mass=_m, com=_c, I=_I),
+         joint=dict(name="j3_elbow", axis=(0, 1, 0), origin=distal(UPPER),
+                    limit=(-2.62, 2.62), effort=TQ_38, vel=3.0, damp=0.05),
+         geom=("mesh", "arm_fore.stl"), section=FORE,
+         mass=_fom, com=_foc, I=_foI),
 
     dict(link="wrist_link", parent="forearm_link",
-         joint=dict(name="j4_wrist_pitch", axis=(0, 1, 0), origin=distal(SEG),
-                    limit=(-1.92, 1.92), effort=TORQUE_MICRO, vel=3.0, damp=0.03),
+         joint=dict(name="j4_wrist_pitch", axis=(0, 1, 0), origin=distal(FORE),
+                    limit=(-1.92, 1.92), effort=TQ_24, vel=3.0, damp=0.03),
          geom=("mesh", "angle_drive.stl", (0, 0, 0), (PI/2, 0, 0)),
-         mass=ACTUATOR + 0.03, com=(0.02, -0.006, 0),
+         mass=ACT_24 + 0.03, com=(0.02, -0.006, 0),
          I=box_I(0.22, 0.05, 0.05, 0.05)),
 
     dict(link="tool_link", parent="wrist_link",
          joint=dict(name="j5_tool_roll", axis=(1, 0, 0), origin=(0.0285, -0.0487, 0),
-                    limit=(-PI, PI), effort=TORQUE_MICRO, vel=3.0, damp=0.03),
+                    limit=(-PI, PI), effort=TQ_24, vel=3.0, damp=0.03),
          geom=("tool",),
          mass=0.03 + PAYLOAD, com=(0.03, 0, 0), I=box_I(0.28, 0.06, 0.04, 0.04)),
 ]
@@ -236,7 +235,7 @@ def assembly_solid():
         if g[0] == "mesh":
             part = {"shoulder_bracket.stl": SB.bracket,
                     "angle_drive.stl": AD.part}.get(g[1])
-            part = part() if part else A.long_section(e["section"])
+            part = part() if part else A.long_section(e["section"])  # arm_upper/arm_fore
             solids.append(Pos(xyz[0]*1000, xyz[1]*1000, xyz[2]*1000) * part)   # mm frame
         elif g[0] == "box":
             s, off = g[1], g[2]
@@ -253,7 +252,8 @@ def main():
     os.makedirs(os.path.join(HERE, "sim", "meshes"), exist_ok=True)
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
     # 1) section + bracket meshes
-    export_stl(_sec, os.path.join(HERE, "sim", "meshes", "arm_long.stl"))
+    export_stl(_up, os.path.join(HERE, "sim", "meshes", "arm_upper.stl"))
+    export_stl(_fo, os.path.join(HERE, "sim", "meshes", "arm_fore.stl"))
     export_stl(SB.bracket(), os.path.join(HERE, "sim", "meshes", "shoulder_bracket.stl"))
     export_stl(AD.part(), os.path.join(HERE, "sim", "meshes", "angle_drive.stl"))
     # 2) the URDF (the generated robot model)
@@ -266,9 +266,10 @@ def main():
     except Exception as ex:                          # preview is non-essential
         prev = f"(skipped: {ex})"
     print("regenerated:")
-    print(f"  sim/meshes/arm_long.stl  (section {SEG}mm, {_m*1000:.0f} g incl. motor)")
+    print(f"  arm_upper.stl {UPPER}mm ({_upm*1000:.0f} g) + arm_fore.stl {FORE}mm ({_fom*1000:.0f} g) incl. motors")
     print(f"  sim/arm_trunk.urdf       ({len(CHAIN)} links, "
-          f"reach ~{(2*SEG/1000 + 0.05 + TCP_FROM_TOOL[0]):.2f} m)")
+          f"reach ~{((UPPER+FORE)/1000 + 0.05 + TCP_FROM_TOOL[0]):.2f} m)")
+    print(f"  motor ladder: slew/elbow 38mm({TQ_38}N*m)  shoulder 48mm({TQ_48}N*m)  wrist 24mm({TQ_24}N*m)")
     print(f"  {prev}")
     if "--show" in sys.argv:                  # live VSCode OCP viewer of the full arm
         from preview import show
