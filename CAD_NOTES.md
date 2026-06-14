@@ -50,7 +50,7 @@ update; hit the viewer's resize/fit button once.
 `watch.py` re-runs a part on every save so its `show()` refreshes the viewer:
 
 ```bash
-make watch                          # default: angle_drive.py
+make watch                          # default: angle_mount.py
 make watch PART=arm_section.py
 make watch PART="arm_assembly.py --show"
 ```

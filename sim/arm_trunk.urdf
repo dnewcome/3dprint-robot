@@ -15,13 +15,13 @@
 
   <joint name="j1_yaw" type="revolute">
     <parent link="base_link"/><child link="mast_link"/>
-    <origin xyz="0.0000 0.0000 0.0650"/><axis xyz="0 0 1"/>
+    <origin xyz="0.0000 0.0000 0.0470"/><axis xyz="0 0 1"/>
     <limit lower="-3.1416" upper="3.1416" effort="3.6" velocity="3.0"/>
     <dynamics damping="0.05"/>
   </joint>
 
   <link name="mast_link">
-    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><mesh filename="shoulder_bracket.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><mesh filename="angle_mount.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
     <inertial><origin xyz="0.0000 -0.0150 0.0300"/><mass value="0.4530"/><inertia ixx="2.79e-04" iyy="2.79e-04" izz="2.70e-04" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
@@ -57,7 +57,7 @@
   </joint>
 
   <link name="wrist_link">
-    <visual><origin xyz="0 0 0" rpy="1.570796325 0 0"/><geometry><mesh filename="angle_wrist.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
+    <visual><origin xyz="0 0 0" rpy="1.570796325 0 0"/><geometry><mesh filename="angle_mount.stl" scale="0.001 0.001 0.001"/></geometry><material name="link"/></visual>
     <inertial><origin xyz="0.0200 -0.0060 0.0000"/><mass value="0.2180"/><inertia ixx="9.17e-05" iyy="9.17e-05" izz="9.17e-05" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
@@ -69,8 +69,10 @@
   </joint>
 
   <link name="tool_link">
-    <visual><origin xyz="0.02 0 0" rpy="0 1.5708 0"/><geometry><cylinder radius="0.02" length="0.006"/></geometry><material name="link"/></visual>
-    <visual><origin xyz="0.05 0 0" rpy="0 1.5708 0"/><geometry><cylinder radius="0.006" length="0.06"/></geometry><material name="tool"/></visual>
+    <visual><origin xyz="0.006 0 0" rpy="0 1.5708 0"/><geometry><cylinder radius="0.018" length="0.006"/></geometry><material name="link"/></visual>
+    <visual><origin xyz="0.022 0 0"/><geometry><box size="0.022 0.05 0.026"/></geometry><material name="link"/></visual>
+    <visual><origin xyz="0.05 0.019 0"/><geometry><box size="0.05 0.008 0.024"/></geometry><material name="tool"/></visual>
+    <visual><origin xyz="0.05 -0.019 0"/><geometry><box size="0.05 0.008 0.024"/></geometry><material name="tool"/></visual>
     <inertial><origin xyz="0.0300 0.0000 0.0000"/><mass value="0.2800"/><inertia ixx="7.47e-05" iyy="1.21e-04" izz="1.21e-04" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 

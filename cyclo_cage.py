@@ -18,7 +18,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import math                                                      # noqa: E402
 import arm_section as A                                          # _load(vendor)  # noqa: E402
-import motor_cage as MC                                          # leg/foot specs # noqa: E402
 from build123d import Box, Cylinder, Pos, Rot, export_stl, export_step  # noqa: E402
 
 MLEN     = 38.0       # motor length (legs span this)
@@ -32,8 +31,11 @@ LEGC     = 21.5       # leg centre offset (X=Y): face overlaps the corner flange
 # diagonal feet (same 45deg) hanging off the leg bottoms
 FOOT_L   = 14.0       # foot length (radial), FOOT_W width, on the diagonal
 FOOT_W   = 13.0
+FOOT_T   = 5.0        # foot thickness (sits on the base plate)
 FOOTC    = 25.5       # foot centre offset (X=Y), just outboard of the leg
 HOLEC    = 28.0       # foot bolt-hole offset (X=Y), just clear of the leg
+FBOLT    = 4.5        # M4 clearance (foot -> base plate)
+CORNERS  = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
 
 
 def _motor_envelope():
@@ -54,19 +56,19 @@ def cage():
     env = _motor_envelope()
     leg_h = FLANGE_T + MLEN
     holes = []
-    for sx, sy in MC.CORNERS:
+    for sx, sy in CORNERS:
         ang = math.degrees(math.atan2(sy, sx))
         # 45deg leg: one face parallel to the chamfer, overlapping the corner
         # flange above (fuses to the plate) and clipped to the motor below.
         leg = (Pos(sx * LEGC, sy * LEGC, (FLANGE_T - MLEN) / 2)
                * Rot(0, 0, ang) * Box(LEG, LEG, leg_h)) - env
         # 45deg foot tab hanging off the bottom on the diagonal
-        foot = (Pos(sx * FOOTC, sy * FOOTC, -MLEN + MC.FOOT_T / 2)
-                * Rot(0, 0, ang) * Box(FOOT_L, FOOT_W, MC.FOOT_T))
+        foot = (Pos(sx * FOOTC, sy * FOOTC, -MLEN + FOOT_T / 2)
+                * Rot(0, 0, ang) * Box(FOOT_L, FOOT_W, FOOT_T))
         out += leg + foot
         holes.append((sx * HOLEC, sy * HOLEC))
     for hx, hy in holes:        # cut AFTER union so nothing plugs them
-        out -= Pos(hx, hy, -MLEN + MC.FOOT_T / 2) * Cylinder(MC.FBOLT / 2, MC.FOOT_T + 2)
+        out -= Pos(hx, hy, -MLEN + FOOT_T / 2) * Cylinder(FBOLT / 2, FOOT_T + 2)
     return out
 
 
@@ -76,7 +78,7 @@ def main():
     export_stl(c, "out/cyclo_cage.stl")
     export_step(c, "out/cyclo_cage.step")
     print(f"cyclo_cage: vol {c.volume:.0f} mm^3  bbox {c.bounding_box().size}  solids {len(c.solids())}")
-    print(f"  vendor cyclo plate top (boss up); 4 legs x {MLEN}mm; 4x M{MC.FBOLT} feet")
+    print(f"  vendor cyclo plate top (boss up); 4 legs x {MLEN}mm; 4x M{FBOLT} feet")
     try:
         from preview import show
         show(c)
