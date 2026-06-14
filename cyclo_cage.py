@@ -23,35 +23,48 @@ from build123d import Box, Cylinder, Pos, Rot, export_stl, export_step  # noqa: 
 
 MLEN     = 38.0       # motor length (legs span this)
 FLANGE_T = 4.85       # vendor plate FLAT flange thickness (the boss rises above it)
-# legs at the CORNERS (the motor's wire connector lives on an edge face, so the
-# mid-sides are blocked). Corner = the flange chamfer gap (clears the 42mm motor).
-LEGR     = 24.0       # leg centre offset (X=Y): in the corner chamfer gap
-EAR_LEN  = 11.0       # diagonal ear length (radial): grabs the corner flange sliver
-EAR_W    = 18.0       # diagonal ear width (tangential, along the chamfer)
-EAR_R    = 22.0       # diagonal ear centre offset (X=Y)
-FOOTR    = 28.0       # foot pad centre (X=Y), outboard of the leg
-HOLER    = 32.0       # foot bolt-hole centre (X=Y): OUTBOARD of the leg, clear
+MOTOR    = 42.3       # NEMA17 body square
+CHAMF    = 38.0       # corner chamfer line (|x|+|y| = CHAMF) on motor + plate
+MCLR     = 0.6        # clearance around the motor envelope
+# legs at the CORNERS, ROTATED 45deg so a face mates the chamfer flat directly.
+LEG      = 9.0        # leg square side
+LEGC     = 21.5       # leg centre offset (X=Y): face overlaps the corner flange
+# diagonal feet (same 45deg) hanging off the leg bottoms
+FOOT_L   = 18.0       # foot length (radial), FOOT_W width, on the diagonal
+FOOT_W   = 14.0
+FOOTC    = 30.0       # foot centre offset (X=Y), outboard of the leg
+HOLEC    = 33.0       # foot bolt-hole offset (X=Y), outboard of the leg
+
+
+def _motor_envelope():
+    # the NEMA17 body: a 42.3 square with the corners chamfered at |x|+|y|=CHAMF,
+    # as a prism over the motor length (+clearance). Subtracted from the legs so
+    # they hug the corner without biting into the motor.
+    sq = Box(MOTOR + 2 * MCLR, MOTOR + 2 * MCLR, MLEN + 1)
+    diag = (CHAMF + MCLR) * math.sqrt(2)             # 45deg box -> chamfer faces
+    oct_ = sq & (Rot(0, 0, 45) * Box(diag, diag, MLEN + 1))
+    return Pos(0, 0, -MLEN / 2) * oct_
 
 
 def cage():
     # vendor cyclo plate: native z 0..9, bearing boss UP (output), motor-side
     # (pilot bore) DOWN. Motor bolts to the bottom face and hangs to z = -MLEN.
-    # Everything we add stays at/below the FLANGE top (z=FLANGE_T): the top is
-    # FLUSH and the rotating output (the boss above FLANGE_T) is left clear.
+    # Everything we add stays at/below the FLANGE top (z=FLANGE_T): FLUSH top.
     out = A._load("base_nema17")
+    env = _motor_envelope()
     leg_h = FLANGE_T + MLEN
     holes = []
     for sx, sy in MC.CORNERS:
-        leg = Pos(sx * LEGR, sy * LEGR, (FLANGE_T - MLEN) / 2) * Box(MC.LEG, MC.LEG, leg_h)
-        # diagonal ear: a 45-deg gusset along the chamfer, grabbing only the corner
-        # flange sliver OUTBOARD of the bolt heads, flush with the flange top.
         ang = math.degrees(math.atan2(sy, sx))
-        ear = (Pos(sx * EAR_R, sy * EAR_R, FLANGE_T / 2)
-               * Rot(0, 0, ang) * Box(EAR_LEN, EAR_W, FLANGE_T))
-        # foot on the base plate, outboard, hole cut from the FINAL solid (below)
-        foot = Pos(sx * FOOTR, sy * FOOTR, -MLEN + MC.FOOT_T / 2) * Box(MC.FOOT_W, MC.FOOT_W, MC.FOOT_T)
-        out += leg + ear + foot
-        holes.append((sx * HOLER, sy * HOLER))
+        # 45deg leg: one face parallel to the chamfer, overlapping the corner
+        # flange above (fuses to the plate) and clipped to the motor below.
+        leg = (Pos(sx * LEGC, sy * LEGC, (FLANGE_T - MLEN) / 2)
+               * Rot(0, 0, ang) * Box(LEG, LEG, leg_h)) - env
+        # 45deg foot tab hanging off the bottom on the diagonal
+        foot = (Pos(sx * FOOTC, sy * FOOTC, -MLEN + MC.FOOT_T / 2)
+                * Rot(0, 0, ang) * Box(FOOT_L, FOOT_W, MC.FOOT_T))
+        out += leg + foot
+        holes.append((sx * HOLEC, sy * HOLEC))
     for hx, hy in holes:        # cut AFTER union so nothing plugs them
         out -= Pos(hx, hy, -MLEN + MC.FOOT_T / 2) * Cylinder(MC.FBOLT / 2, MC.FOOT_T + 2)
     return out
